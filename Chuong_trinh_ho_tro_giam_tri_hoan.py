@@ -74,38 +74,30 @@ with tab1:
     if st.session_state.get("show_feedback", False):
         st.markdown("---")
         st.subheader("📝 Đánh giá hiệu quả phiên học")
-        danh_gia = st.radio(
-            "Phiên học vừa rồi có giúp bạn tập trung không?",
-            ["🤩 Rất hiệu quả", "🙂 Khá ổn", "🙁 Không hiệu quả"]
-        )
-        danh_sach_ly_do = []
-        ly_do_khac_text = ""
-        if danh_gia != "🤩 Rất hiệu quả":
-            st.write("👉 **Điều gì khiến bạn bị xao nhãng?**")
-            if st.checkbox("Nhiệm vụ quá khó hoặc quá dài"):
-                danh_sach_ly_do.append("Bài khó/dài")
-            if st.checkbox("Cảm thấy mệt mỏi, buồn ngủ"):
-                danh_sach_ly_do.append("Mệt mỏi")
-            if st.checkbox("Xao nhãng từ môi trường (Điện thoại, tiếng ồn)"):
-                danh_sach_ly_do.append("Xao nhãng ngoại cảnh")
-            if st.checkbox("Lý do khác"):
-                danh_sach_ly_do.append("Khác")
-                ly_do_khac_text = st.text_input("Nhập ngắn gọn lý do của bạn:")
-        if st.button("Gửi đánh giá"):
-            # 1. Lưu vào CSV
-            thoi_gian = datetime.now().strftime("%H:%M:%S %d/%m/%Y")
-            chuoi_ly_do = ", ".join(danh_sach_ly_do)
-            with open("feedback.csv", mode="a", encoding="utf-8-sig", newline="") as f:
-                writer = csv.writer(f)
-                writer.writerow([thoi_gian, danh_gia, chuoi_ly_do, ly_do_khac_text])
-            st.success("Đã ghi nhận phản hồi!")
-            st.success("Cảm ơn bạn đã đóng góp!")
-            # 2. Dọn dẹp trạng thái & Reset giao diện
-            st.session_state.show_feedback = False
-            st.session_state.risk_score = None
-            time.sleep(1.5)
-            st.rerun()
-        
+        with st.form(key="pomodoro_feedback_form"):
+            danh_gia = st.radio(
+                "Phiên học vừa rồi có giúp bạn tập trung không?",
+                ["🤩 Rất hiệu quả", "🙂 Khá ổn", "🙁 Không hiệu quả"],
+                disabled=is_disabled
+            )
+            danh_sach_ly_do = st.text_input(
+            "Lý do xao nhãng (Nếu có):", 
+            placeholder="Ví dụ: Bị thông báo điện thoại làm phiền, mệt mỏi...")
+            submit_btn = st.form_submit_button(label="Gửi đánh giá")
+            if submit_btn:
+                final_reason = danh_sach_ly_do if danh_sach_ly_do.strip() != "" else "Không có"
+                # 1. Lưu vào CSV
+                thoi_gian = datetime.now().strftime("%H:%M:%S %d/%m/%Y")
+                with open("feedback.csv", mode="a", encoding="utf-8-sig", newline="") as f:
+                    writer = csv.writer(f)
+                    writer.writerow([thoi_gian, danh_gia,danh_sach_ly_do])
+                st.success("Đã ghi nhận phản hồi!")
+                st.success("Cảm ơn bạn đã đóng góp!")
+                # 2. Dọn dẹp trạng thái & Reset giao diện
+                st.session_state.show_feedback = False
+                st.session_state.risk_score = None
+                time.sleep(1.5)
+                st.rerun()
         # (Bao gồm Slider, Đếm ngược Pomodoro, Form đánh giá Feedback...)
         st.write("Toàn bộ tính năng Pomodoro và Form đánh giá nằm ở đây.")
 with tab2:
@@ -115,8 +107,11 @@ with tab2:
     if os.path.exists(file_path) and os.path.getsize(file_path) > 0:
         try:
             # Đọc dữ liệu từ file CSV
-            df = pd.read_csv(file_path, names=["Thời gian", "Đánh giá", "Lý do", "Khác"])
-            
+            df = pd.read_csv(file_path, header=None)
+            df.columns = ["Thời gian", "Đánh giá", "Lý do"]
+            #Thay thế toàn bộ ô trống/rỗng thành chữ "Không có"
+            df = df.fillna("Không có")
+            df = df.replace("", "Không có")
             # 1. Vẽ Pie Chart
             st.subheader("1. Tỷ lệ Đánh giá Hiệu quả (Pie Chart)")
             dem = df["Đánh giá"].value_counts()
