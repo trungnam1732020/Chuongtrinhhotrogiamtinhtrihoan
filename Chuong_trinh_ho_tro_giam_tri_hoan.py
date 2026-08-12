@@ -5,7 +5,7 @@ from datetime import datetime
 import pandas as pd
 import matplotlib.pyplot as plt
 import os
-tab1, tab2 = st.tabs(["⏱️ Ứng dụng Pomodoro", "📊 Báo cáo Thống kê (KHKT)"])
+tab1, tab2 = st.tabs(["⏱️ Giao Diện Hỗ Trợ Giảm Tính Trì Hoãn", "📊 Báo cáo Thống kê (KHKT)"])
 with tab1:
     # Đọc tham số từ URL
     query_params = st.query_params
@@ -19,8 +19,6 @@ with tab1:
     def start_pomodoro():
         st.session_state.pomo_running = True
         disabled=st.session_state.pomo_running
-    danh_sach_ly_do = []
-    ly_do_khac_text = ""
     def countdown_timer(seconds):
         timer_placeholder = st.empty() 
         for t in range(seconds, -1, -1):
@@ -53,6 +51,8 @@ with tab1:
         elif risk_score >= 40:
             st.warning("⚠️ NGUY CƠ TRÌ HOÃN TRUNG BÌNH.")
             st.write("💡 **Giải pháp điều chỉnh:** Dùng kỹ thuật Pomodoro.")
+            st.write("Phương pháp Pomodoro là một kỹ thuật quản lý thời gian được phát triển bởi Francesco Cirillo vào cuối những năm 1980."
+                     "Phương pháp này giúp con người làm việc hoặc học tập hiệu quả hơn thông qua việc chia nhỏ thời gian làm việc thành các chu kỳ ngắn xen kẽ với thời gian nghỉ ngắn.")
             st.button("Bắt đầu Pomodoro 25 phút", on_click=start_pomodoro,disabled=is_disabled)
             if st.session_state.pomo_running:
                 # Nếu đường link có đuôi ?test=true -> Chạy 10 giây
@@ -60,10 +60,12 @@ with tab1:
                     countdown_timer(10)
                     st.sidebar.caption("Chế độ Demo (10s)")
                 else:
-                    countdown_timer(1500)
+                    countdown_timer(10)
         else:
             st.success("✅ NGUY CƠ THẤP! Bạn đang có trạng thái tốt, hãy bắt đầu ngay.")
             st.write("**Gợi Ý:** Hãy ưu tiên bài quan trọng nhất khi còn tỉnh táo!")
+            st.write("Phương pháp Pomodoro là một kỹ thuật quản lý thời gian được phát triển bởi Francesco Cirillo vào cuối những năm 1980."
+                     "Phương pháp này giúp con người làm việc hoặc học tập hiệu quả hơn thông qua việc chia nhỏ thời gian làm việc thành các chu kỳ ngắn xen kẽ với thời gian nghỉ ngắn.")
             st.button("Bắt đầu Pomodoro 45 phút", on_click=start_pomodoro,disabled=is_disabled)
             if st.session_state.pomo_running:
                 if query_params.get("test") == "true":
@@ -76,10 +78,8 @@ with tab1:
         st.subheader("📝 Đánh giá hiệu quả phiên học")
         with st.form(key="pomodoro_feedback_form"):
             danh_gia = st.radio(
-                "Phiên học vừa rồi có giúp bạn tập trung không?",
-                ["🤩 Rất hiệu quả", "🙂 Khá ổn", "🙁 Không hiệu quả"],
-                disabled=is_disabled
-            )
+    "Bạn cảm thấy như thế nào về phiên học vừa rồi?",
+    [ "😄 Rất hiệu quả", "🙂 Khá ổn", "😞 Không hiệu quả" ])
             danh_sach_ly_do = st.text_input(
             "Lý do xao nhãng (Nếu có):", 
             placeholder="Ví dụ: Bị thông báo điện thoại làm phiền, mệt mỏi...")
@@ -126,6 +126,12 @@ with tab2:
             # 2. Hiển thị Bảng dữ liệu
             st.subheader("2. Dữ liệu chi tiết các lượt phản hồi")
             st.dataframe(df)
-            
+            with open("feedback.csv", "rb") as file:
+                st.download_button(
+                label="📥 Tải xuống dữ liệu phản hồi (.CSV)",
+                data=file,
+                file_name="baocao_feedback_pomodoro.csv",
+                mime="text/csv"
+    )
         except Exception as e:
             st.warning("Đã xảy ra lỗi khi đọc dữ liệu. Bạn hãy gửi thêm phản hồi mới nhé!") 
