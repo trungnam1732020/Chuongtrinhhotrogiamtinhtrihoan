@@ -145,11 +145,11 @@ with tab2:
                 df.iloc[::-1], hide_index=True, use_container_width=True
             )
             # 3. Nút Download
-            csv_data = df.to_csv(index=False, encoding="utf-8-sig")
+            excel_data = df.to_csv(index=False, sep="\t").encode("utf-16le")
             st.download_button(
                 label="📥 Tải báo cáo CSV",
-                data=csv_data,
-                file_name="baocao_pomodoro.csv",
+                data=excel_data,
+                file_name="feedback_baocao.csv",
                 mime="text/csv",
             )
         else:
