@@ -109,6 +109,7 @@ with tab1:
         encoding="utf-8-sig")
 
                 st.success("Đã ghi nhận phản hồi!")
+                st.session_state.risk_score=None
                 st.session_state.show_feedback = False
                 if "time_left" in st.session_state:
                     del st.session_state["time_left"]
