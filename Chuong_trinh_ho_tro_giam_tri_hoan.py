@@ -144,6 +144,14 @@ with tab2:
             st.dataframe(
                 df.iloc[::-1], hide_index=True, use_container_width=True
             )
+            # 3. Nút Download
+            csv_data = df.to_csv(index=False, encoding="utf-8-sig")
+            st.download_button(
+                label="📥 Tải báo cáo CSV",
+                data=csv_data,
+                file_name="baocao_pomodoro.csv",
+                mime="text/csv",
+            )
         else:
             st.info("Chưa có dữ liệu.")
     else:
