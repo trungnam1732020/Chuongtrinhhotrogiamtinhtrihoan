@@ -3,8 +3,8 @@ import time
 import csv
 from datetime import datetime
 import pandas as pd
-import matplotlib.pyplot as plt
 import os
+import plotly.express as px
 tab1, tab2 = st.tabs(["⏱️ Giao Diện Hỗ Trợ Giảm Tính Trì Hoãn", "📊 Báo cáo Thống kê (KHKT)"])
 with tab1:
     # Đọc tham số từ URL
@@ -107,44 +107,35 @@ with tab1:
                 st.success("Cảm ơn bạn đã đóng góp!")
                 # 2. Dọn dẹp trạng thái & Reset giao diện
                 st.session_state.show_feedback = False
-                del st.session_state["time_left"]
+                if "time_left" in st.session_state:
+                    del st.session_state["time_left"]
                 st.session_state.risk_score = None
                 time.sleep(1.5)
                 st.rerun()
         # (Bao gồm Slider, Đếm ngược Pomodoro, Form đánh giá Feedback...)
-        st.write("Toàn bộ tính năng Pomodoro và Form đánh giá nằm ở đây.")
+    st.write("Toàn bộ tính năng Pomodoro và Form đánh giá nằm ở đây.")
 with tab2:
     st.header("📊 Kết quả Thực nghiệm & Đánh giá Hiệu quả")
-    file_path = "feedback.csv"
-    # Kiểm tra xem đã có dữ liệu chưa
-    if os.path.exists(file_path) and os.path.getsize(file_path) > 0:
+    with tab2:
+        st.subheader("📊 Thống kê đánh giá")
+
+        # ĐẢM BẢO ĐỌC LẠI FILE CSV MỖI LẦN VÀO TAB
         try:
-            # Đọc dữ liệu từ file CSV
-            df = pd.read_csv(file_path, header=None)
-            df.columns = ["Thời gian", "Đánh giá", "Lý do"]
-            #Thay thế toàn bộ ô trống/rỗng thành chữ "Không có"
-            df = df.fillna("Không có")
-            df = df.replace("", "Không có")
-            # 1. Vẽ Pie Chart
-            st.subheader("1. Tỷ lệ Đánh giá Hiệu quả (Pie Chart)")
-            dem = df["Đánh giá"].value_counts()
-            
-            fig, ax = plt.subplots(figsize=(5, 5))
-            ax.pie(dem, labels=dem.index, autopct='%1.1f%%', startangle=90)
-            ax.axis('equal')  # Giữ biểu đồ tròn xoe
-            st.pyplot(fig)
-            
-            st.markdown("---")
-            
-            # 2. Hiển thị Bảng dữ liệu
-            st.subheader("2. Dữ liệu chi tiết các lượt phản hồi")
-            st.dataframe(df)
-            with open("feedback.csv", "rb") as file:
-                st.download_button(
-                label="📥 Tải xuống dữ liệu phản hồi (.CSV)",
-                data=file,
-                file_name="feedback_baocao.csv",
-                mime="text/csv"
-    )
-        except Exception as e:
-            st.warning("Đã xảy ra lỗi khi đọc dữ liệu. Bạn hãy gửi thêm phản hồi mới nhé!") 
+            df = pd.read_csv("feedback.csv", names=["Thời gian", "Mức độ", "Lý do"])
+            if not df.empty:
+                fig = px.pie(
+                    df,
+                    names="Mức độ",
+                    title="Tỉ lệ đánh giá hiệu quả",
+                    color="Mức độ",
+                    color_discrete_map={
+                        "😄 Rất hiệu quả": "#2ecc71",
+                        "Khá ổn": "#f1c40f",
+                        "😞 Không hiệu quả": "#e74c3c",
+                    },
+                )
+                st.plotly_chart(fig, use_container_width=True)
+            else:
+                st.info("Chưa có dữ liệu.")
+        except Exception:
+            st.info("Chưa có file dữ liệu feedback.csv")
