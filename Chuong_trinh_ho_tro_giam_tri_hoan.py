@@ -107,8 +107,8 @@ with tab1:
                 st.success("Cảm ơn bạn đã đóng góp!")
                 # 2. Dọn dẹp trạng thái & Reset giao diện
                 st.session_state.show_feedback = False
-                st.session_state.risk_score = None
                 del st.session_state["time_left"]
+                st.session_state.risk_score = None
                 time.sleep(1.5)
                 st.rerun()
         # (Bao gồm Slider, Đếm ngược Pomodoro, Form đánh giá Feedback...)
