@@ -9,6 +9,7 @@ tab1, tab2 = st.tabs(["⏱️ Giao Diện Hỗ Trợ Giảm Tính Trì Hoãn", "
 with tab1:
     # Đọc tham số từ URL
     query_params = st.query_params
+    is_test_mode = query_params.get("test") == "true"
     if "show_feedback" not in st.session_state:
         st.session_state.show_feedback = False
     if "risk_score" not in st.session_state:
@@ -16,21 +17,27 @@ with tab1:
     if "pomo_running" not in st.session_state:
         st.session_state.pomo_running = False
     is_disabled=st.session_state.pomo_running
-    def start_pomodoro():
+    def countdown_timer(seconds):
         st.session_state.pomo_running = True
         disabled=st.session_state.pomo_running
-    def countdown_timer(seconds):
-        timer_placeholder = st.empty() 
-        for t in range(seconds, -1, -1):
-            mins, secs = divmod(t, 60)
-            time_format = f"⏱️ Thời gian còn lại: {mins:02d}:{secs:02d}"
-            timer_placeholder.markdown(f"### {time_format}")
+        if "time_left" not in st.session_state:
+            st.session_state.time_left = seconds
+        timer_placeholder = st.empty()
+    # 2. Tạo nút bấm hoặc giao diện hiển thị
+        mins, secs = divmod(st.session_state.time_left, 60)
+    # Hiển thị đồng hồ dạng 00:00
+        st.header(f"⏱️ {mins:02d}:{secs:02d}")
+    # 3. Vòng lặp đếm ngược
+        if st.session_state.pomo_running and st.session_state.time_left > 0:
             time.sleep(1)
-        timer_placeholder.success("🎉 Bạn đã hoàn thành xuất sắc một phiên Pomodoro! Hãy nghỉ ngơi ít phút.")
-        st.session_state.pomo_running = False
-        st.session_state.show_feedback = True
-        time.sleep(4)
-        st.rerun()
+            st.session_state.time_left -= 1
+            st.rerun()
+        elif st.session_state.time_left == 0:
+            timer_placeholder.success("🎉 Bạn đã hoàn thành xuất sắc một phiên Pomodoro! Hãy nghỉ ngơi ít phút.")
+            st.session_state.pomo_running = False
+            st.session_state.show_feedback = True
+            time.sleep(4)
+            st.rerun()
     st.title("🎯 Trợ Lý Dự Đoán & Cảnh Báo Trì Hoãn Học Tập")
     task_name = st.text_input("Tên bài tập/nhiệm vụ:", "Bài tập Toán",disabled=is_disabled)
     difficulty = st.slider("Độ khó cảm nhận (1: Rất dễ - 5: Rất khó):", 1, 5, 3,disabled=is_disabled)
@@ -53,38 +60,45 @@ with tab1:
             st.write("💡 **Giải pháp điều chỉnh:** Dùng kỹ thuật Pomodoro.")
             st.write("Phương pháp Pomodoro là một kỹ thuật quản lý thời gian được phát triển bởi Francesco Cirillo vào cuối những năm 1980."
                      "Phương pháp này giúp con người làm việc hoặc học tập hiệu quả hơn thông qua việc chia nhỏ thời gian làm việc thành các chu kỳ ngắn xen kẽ với thời gian nghỉ ngắn.")
-            st.button("Bắt đầu Pomodoro 25 phút", on_click=start_pomodoro,disabled=is_disabled)
-            if st.session_state.pomo_running:
-                # Nếu đường link có đuôi ?test=true -> Chạy 10 giây
-                if query_params.get("test") == "true":
-                    countdown_timer(10)
-                    st.sidebar.caption("Chế độ Demo (10s)")
+            if is_test_mode:
+                st.warning("⚠️ Đang ở chế độ TEST (Thử nghiệm 10 giây)")
+                countdown_timer(10)
+            else:
+                mode = st.radio("Chọn Chế Độ Tập Trung:", ("25 phút (Pomodoro chuẩn)", "45 phút (1 Tiết học)"),
+                index=None,key="pomodoro_mode_radio",)  # Để trống, không chọn sẵn
+                if mode == "25 phút (Pomodoro chuẩn)":
+                    countdown_timer(1500)
+                elif mode == "45 phút (1 Tiết học)":
+                    countdown_timer(2700)
                 else:
-                    countdown_timer(10)
+        # Nếu chưa chọn chế độ, xóa time_left cũ để lần sau chọn lại từ đầu
+                    if "time_left" in st.session_state:
+                        del st.session_state["time_left"]
+                    st.info("👈 Chọn một chế độ bên trên để bắt đầu.")
         else:
             st.success("✅ NGUY CƠ THẤP! Bạn đang có trạng thái tốt, hãy bắt đầu ngay.")
             st.write("**Gợi Ý:** Hãy ưu tiên bài quan trọng nhất khi còn tỉnh táo!")
             st.write("Phương pháp Pomodoro là một kỹ thuật quản lý thời gian được phát triển bởi Francesco Cirillo vào cuối những năm 1980."
                      "Phương pháp này giúp con người làm việc hoặc học tập hiệu quả hơn thông qua việc chia nhỏ thời gian làm việc thành các chu kỳ ngắn xen kẽ với thời gian nghỉ ngắn.")
-            st.button("Bắt đầu Pomodoro 45 phút", on_click=start_pomodoro,disabled=is_disabled)
+            st.button("Bắt đầu Pomodoro 45 phút",disabled=is_disabled)
             if st.session_state.pomo_running:
                 if query_params.get("test") == "true":
-                    countdown_timer(10)
+                    countdown_timer(1/6)
                     st.sidebar.caption("Chế độ Demo (10s)")
                 else:
-                    countdown_timer(2700)
+                    countdown_timer(45)
     if st.session_state.get("show_feedback", False):
         st.markdown("---")
         st.subheader("📝 Đánh giá hiệu quả phiên học")
-        with st.form(key="pomodoro_feedback_form"):
+        with st.form(key="feedback_form"):
             danh_gia = st.radio(
     "Bạn cảm thấy như thế nào về phiên học vừa rồi?",
-    [ "😄 Rất hiệu quả", "🙂 Khá ổn", "😞 Không hiệu quả" ])
+    [ "😄 Rất hiệu quả", "Khá ổn", "😞 Không hiệu quả" ])
             danh_sach_ly_do = st.text_input(
             "Lý do xao nhãng (Nếu có):", 
             placeholder="Ví dụ: Bị thông báo điện thoại làm phiền, mệt mỏi...")
-            submit_btn = st.form_submit_button(label="Gửi đánh giá")
-            if submit_btn:
+            submit_button = st.form_submit_button(label="Gửi đánh giá")
+            if submit_button:
                 final_reason = danh_sach_ly_do if danh_sach_ly_do.strip() != "" else "Không có"
                 # 1. Lưu vào CSV
                 thoi_gian = datetime.now().strftime("%H:%M:%S %d/%m/%Y")
