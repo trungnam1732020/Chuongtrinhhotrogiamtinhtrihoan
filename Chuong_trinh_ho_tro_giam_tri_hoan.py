@@ -33,6 +33,7 @@ with tab1:
             st.session_state.time_left -= 1
             st.rerun()
         elif st.session_state.time_left == 0:
+            del st.session_state["time_left"]
             timer_placeholder.success("🎉 Bạn đã hoàn thành xuất sắc một phiên Pomodoro! Hãy nghỉ ngơi ít phút.")
             st.session_state.pomo_running = False
             st.session_state.show_feedback = True
