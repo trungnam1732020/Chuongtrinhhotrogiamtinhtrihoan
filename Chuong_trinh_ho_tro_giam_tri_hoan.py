@@ -97,20 +97,22 @@ with tab1:
             placeholder="Ví dụ: Bị thông báo điện thoại làm phiền, mệt mỏi...")
             submit_button = st.form_submit_button(label="Gửi đánh giá")
             if submit_button:
-                final_reason = danh_sach_ly_do if danh_sach_ly_do.strip() != "" else "Không có"
-                # 1. Lưu vào CSV
-                thoi_gian = datetime.now().strftime("%H:%M:%S %d/%m/%Y")
-                with open("feedback.csv", mode="a", encoding="utf-8-sig", newline="") as f:
-                    writer = csv.writer(f)
-                    writer.writerow([thoi_gian, danh_gia,danh_sach_ly_do])
+                final_reason = (danh_sach_ly_do if danh_sach_ly_do.strip() != "" else "Không có")
+                thoi_gian = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                # Tạo DataFrame 1 dòng
+                new_entry = pd.DataFrame([[thoi_gian, danh_gia, final_reason]],columns=["Thời gian", "Mức độ", "Lý do"],)
+                # Ghi tiếp vào file CSV chuẩn UTF-8
+                new_entry.to_csv("feedback.csv",
+        mode="a",
+        header=not os.path.exists("feedback.csv"),
+        index=False,
+        encoding="utf-8-sig")
+
                 st.success("Đã ghi nhận phản hồi!")
-                st.success("Cảm ơn bạn đã đóng góp!")
-                # 2. Dọn dẹp trạng thái & Reset giao diện
                 st.session_state.show_feedback = False
                 if "time_left" in st.session_state:
                     del st.session_state["time_left"]
-                st.session_state.risk_score = None
-                time.sleep(1.5)
+                time.sleep(1)
                 st.rerun()
         # (Bao gồm Slider, Đếm ngược Pomodoro, Form đánh giá Feedback...)
     st.write("Toàn bộ tính năng Pomodoro và Form đánh giá nằm ở đây.")
