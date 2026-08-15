@@ -117,20 +117,34 @@ with tab1:
 with tab2:
     st.header("📊 Kết quả Thực nghiệm & Đánh giá Hiệu quả")
         # ĐẢM BẢO ĐỌC LẠI FILE CSV MỖI LẦN VÀO TAB
-    try:
-        df = pd.read_csv("feedback.csv", names=["Thời gian", "Mức độ", "Lý do"])
+    if os.path.exists("feedback.csv"):
+        df = pd.read_csv(
+            "feedback.csv",
+            names=["Thời gian", "Mức độ", "Lý do"],
+            encoding="utf-8-sig",
+        )
+
         if not df.empty:
+            # 1. Biểu đồ tròn
             fig = px.pie(
-            df,
-            names="Mức độ",
-            title="Tỉ lệ đánh giá hiệu quả",
-            color="Mức độ",
-            color_discrete_map={
-            "😄 Rất hiệu quả": "#2ecc71",
-            "Khá ổn": "#f1c40f",
-            "😞 Không hiệu quả": "#e74c3c"})
+                df,
+                names="Mức độ",
+                title="Tỉ lệ đánh giá",
+                color="Mức độ",
+                color_discrete_map={
+                    "😄 Rất hiệu quả": "#2ecc71",
+                    "Khá ổn": "#f1c40f",
+                    "😞 Không hiệu quả": "#e74c3c",
+                },
+            )
             st.plotly_chart(fig, use_container_width=True)
+
+            # 2. Bảng lý do chi tiết
+            st.subheader("📝 Lý do chi tiết")
+            st.dataframe(
+                df.iloc[::-1], hide_index=True, use_container_width=True
+            )
         else:
             st.info("Chưa có dữ liệu.")
-    except Exception:
-        st.info("Chưa có file dữ liệu feedback.csv")
+    else:
+        st.info("Chưa có file feedback.csv")
