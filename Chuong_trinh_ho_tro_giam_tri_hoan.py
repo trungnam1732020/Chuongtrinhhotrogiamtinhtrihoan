@@ -116,26 +116,21 @@ with tab1:
     st.write("Toàn bộ tính năng Pomodoro và Form đánh giá nằm ở đây.")
 with tab2:
     st.header("📊 Kết quả Thực nghiệm & Đánh giá Hiệu quả")
-    with tab2:
-        st.subheader("📊 Thống kê đánh giá")
-
         # ĐẢM BẢO ĐỌC LẠI FILE CSV MỖI LẦN VÀO TAB
-        try:
-            df = pd.read_csv("feedback.csv", names=["Thời gian", "Mức độ", "Lý do"])
-            if not df.empty:
-                fig = px.pie(
-                    df,
-                    names="Mức độ",
-                    title="Tỉ lệ đánh giá hiệu quả",
-                    color="Mức độ",
-                    color_discrete_map={
-                        "😄 Rất hiệu quả": "#2ecc71",
-                        "Khá ổn": "#f1c40f",
-                        "😞 Không hiệu quả": "#e74c3c",
-                    },
-                )
-                st.plotly_chart(fig, use_container_width=True)
-            else:
-                st.info("Chưa có dữ liệu.")
-        except Exception:
-            st.info("Chưa có file dữ liệu feedback.csv")
+    try:
+        df = pd.read_csv("feedback.csv", names=["Thời gian", "Mức độ", "Lý do"])
+        if not df.empty:
+            fig = px.pie(
+            df,
+            names="Mức độ",
+            title="Tỉ lệ đánh giá hiệu quả",
+            color="Mức độ",
+            color_discrete_map={
+            "😄 Rất hiệu quả": "#2ecc71",
+            "Khá ổn": "#f1c40f",
+            "😞 Không hiệu quả": "#e74c3c"})
+            st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.info("Chưa có dữ liệu.")
+    except Exception:
+        st.info("Chưa có file dữ liệu feedback.csv")
