@@ -125,8 +125,9 @@ with tab2:
             "feedback.csv",
             names=["Thời gian", "Mức độ", "Lý do"],
             encoding="utf-8-sig",
+            on_bad_lines="skip",  # Tự động bỏ qua dòng bị lỗi cấu trúc cũ
+            engine="python",  # Giúp đọc các ký tự đặc biệt linh hoạt hơn
         )
-
         if not df.empty:
             # 1. Biểu đồ tròn
             fig = px.pie(
