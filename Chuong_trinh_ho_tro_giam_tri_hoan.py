@@ -5,6 +5,8 @@ from datetime import datetime
 import pandas as pd
 import os
 import plotly.express as px
+from streamlit_gsheets import GSheetsConnection
+conn = st.connection("gsheets", type=GSheetsConnection)
 tab1, tab2 = st.tabs(["⏱️ Giao Diện Hỗ Trợ Giảm Tính Trì Hoãn", "📊 Báo cáo Thống kê (KHKT)"])
 with tab1:
     # Đọc tham số từ URL
@@ -79,12 +81,21 @@ with tab1:
             st.write("Phương pháp Pomodoro là một kỹ thuật quản lý thời gian được phát triển bởi Francesco Cirillo vào cuối những năm 1980."
                      "Phương pháp này giúp con người làm việc hoặc học tập hiệu quả hơn thông qua việc chia nhỏ thời gian làm việc thành các chu kỳ ngắn xen kẽ với thời gian nghỉ ngắn.")
             st.button("Bắt đầu Pomodoro 45 phút",disabled=is_disabled)
-            if st.session_state.pomo_running:
-                if query_params.get("test") == "true":
-                    countdown_timer(1/6)
-                    st.sidebar.caption("Chế độ Demo (10s)")
+            if is_test_mode:
+                st.warning("⚠️ Đang ở chế độ TEST (Thử nghiệm 10 giây)")
+                countdown_timer(10)
+            else:
+                mode = st.radio("Chọn Chế Độ Tập Trung:", ("25 phút (Pomodoro chuẩn)", "45 phút (1 Tiết học)"),
+                index=None,key="pomodoro_mode_radio",)  # Để trống, không chọn sẵn
+                if mode == "25 phút (Pomodoro chuẩn)":
+                    countdown_timer(1500)
+                elif mode == "45 phút (1 Tiết học)":
+                    countdown_timer(2700)
                 else:
-                    countdown_timer(45)
+                    # Nếu chưa chọn chế độ, xóa time_left cũ để lần sau chọn lại từ đầu
+                    if "time_left" in st.session_state:
+                        del st.session_state["time_left"]
+                    st.info("👈 Chọn một chế độ bên trên để bắt đầu.")
     if st.session_state.get("show_feedback", False):
         st.markdown("---")
         st.subheader("📝 Đánh giá hiệu quả phiên học")
@@ -96,40 +107,38 @@ with tab1:
             "Lý do xao nhãng (Nếu có):", 
             placeholder="Ví dụ: Bị thông báo điện thoại làm phiền, mệt mỏi...")
             submit_button = st.form_submit_button(label="Gửi đánh giá")
-            if submit_button:
+            if "submit_button" in locals() and submit_button:
                 final_reason = (danh_sach_ly_do if danh_sach_ly_do.strip() != "" else "Không có")
                 thoi_gian = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                # Tạo DataFrame 1 dòng
-                new_entry = pd.DataFrame([[thoi_gian, danh_gia, final_reason]],columns=["Thời gian", "Mức độ", "Lý do"],)
-                # Ghi tiếp vào file CSV chuẩn UTF-8
-                new_entry.to_csv("feedback.csv",
-        mode="a",
-        header=not os.path.exists("feedback.csv"),
-        index=False,
-        encoding="utf-8-sig")
 
-                st.success("Đã ghi nhận phản hồi!")
-                st.session_state.risk_score=None
-                st.session_state.show_feedback = False
-                if "time_left" in st.session_state:
-                    del st.session_state["time_left"]
-                time.sleep(1)
-                st.rerun()
-        # (Bao gồm Slider, Đếm ngược Pomodoro, Form đánh giá Feedback...)
-    st.write("Toàn bộ tính năng Pomodoro và Form đánh giá nằm ở đây.")
+                try:
+        # Đọc dữ liệu hiện tại từ Sheet (ttl=0 để luôn lấy dữ liệu mới nhất)
+                    existing_data = conn.read(ttl=0)
+                    # Tạo DataFrame dòng mới
+                    new_data = pd.DataFrame(
+                        [[thoi_gian, danh_gia, final_reason]],
+                        columns=["Thời gian", "Mức độ", "Lý do"])
+                    # Nối dòng mới vào và cập nhật lên Google Sheets
+                    updated_df = pd.concat([existing_data, new_data], ignore_index=True)
+                    conn.update(data=updated_df)
+                    st.session_state.risk_score=None
+                    st.success("🎉 Đã lưu phản hồi thành công lên Google Sheets!")
+                    st.session_state.show_feedback = False
+                    if "time_left" in st.session_state:
+                        del st.session_state["time_left"]
+                    time.sleep(1)
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Lỗi khi lưu lên Google Sheets: {e}")
 with tab2:
     st.header("📊 Kết quả Thực nghiệm & Đánh giá Hiệu quả")
         # ĐẢM BẢO ĐỌC LẠI FILE CSV MỖI LẦN VÀO TAB
-    if os.path.exists("feedback.csv"):
-        df = pd.read_csv(
-            "feedback.csv",
-            names=["Thời gian", "Mức độ", "Lý do"],
-            encoding="utf-8-sig",
-            on_bad_lines="skip",  # Tự động bỏ qua dòng bị lỗi cấu trúc cũ
-            engine="python",  # Giúp đọc các ký tự đặc biệt linh hoạt hơn
-        )
-        if not df.empty:
-            # 1. Biểu đồ tròn
+    try:
+        # Đọc dữ liệu thực tế từ Google Sheets
+        df = conn.read(ttl=0)
+
+        if not df.empty and "Mức độ" in df.columns:
+            # 1. Biểu đồ tròn (Pie Chart)
             fig = px.pie(
                 df,
                 names="Mức độ",
@@ -143,20 +152,22 @@ with tab2:
             )
             st.plotly_chart(fig, use_container_width=True)
 
-            # 2. Bảng lý do chi tiết
-            st.subheader("📝 Lý do chi tiết")
+            # 2. Bảng lý do chi tiết (Đảo ngược để dòng mới nhất nằm trên)
+            st.subheader("📝 Danh sách lý do xao nhãng")
             st.dataframe(
                 df.iloc[::-1], hide_index=True, use_container_width=True
             )
-            # 3. Nút Download
-            excel_data = df.to_csv(index=False, sep="\t").encode("utf-16le")
+
+            # 3. Nút Tải file CSV sạch
+            csv_data = df.to_csv(index=False, encoding="utf-8-sig")
             st.download_button(
                 label="📥 Tải báo cáo CSV",
-                data=excel_data,
-                file_name="feedback_baocao.csv",
+                data=csv_data,
+                file_name="baocao_pomodoro.csv",
                 mime="text/csv",
             )
         else:
-            st.info("Chưa có dữ liệu.")
-    else:
-        st.info("Chưa có file feedback.csv")
+            st.info("Chưa có dữ liệu phản hồi nào trên Google Sheets.")
+
+    except Exception as e:
+        st.error(f"Chưa kết nối được với Google Sheets. Vui lòng kiểm tra file secrets.toml! Lỗi: {e}")
