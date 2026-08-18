@@ -206,7 +206,7 @@ with tab2:
                 )
 
                 # 3. Nút Tải file CSV sạch
-                csv_data = df.to_csv(index=False, encoding="utf-8-sig")
+                csv_data = "\ufeff" + df.to_csv(index=False, encoding="utf-8-sig")
                 st.download_button(
                     label="📥 Tải báo cáo CSV",
                     data=csv_data,
