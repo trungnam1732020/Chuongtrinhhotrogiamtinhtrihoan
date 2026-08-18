@@ -6,22 +6,23 @@ import pandas as pd
 import os
 import plotly.express as px
 import gspread
-from oauth2client.service_account import ServiceAccountCredentials
+from oauth2client.service_account import Credentials
 
 # Cấu hình kết nối Google Sheets qua Service Account từ secrets
 @st.cache_resource
 def get_gsheet_client():
-    creds_dict = dict(st.secrets["connections"]["gsheets"])
-    scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-    creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
+    # Lấy toàn bộ thông tin xác thực từ secrets.toml
+    creds_info = dict(st.secrets["connections"]["gsheets"])
+    # Đảm bảo trường type luôn được gán đúng
+    creds_info["type"] = "service_account"
+    scope = ["https://www.googleapis.com/auth/spreadsheets",
+            "https://www.googleapis.com/auth/drive"]
+    creds = Credentials.from_service_account_info(creds_info, scopes=scope)
     client = gspread.authorize(creds)
     return client
-
-# Mở Google Sheet (Sheet1)
 def get_worksheet():
     client = get_gsheet_client()
     sheet_url = st.secrets["connections"]["gsheets"]["spreadsheet"]
-    return client.open_by_url(sheet_url).sheet1
 tab1, tab2 = st.tabs(["⏱️ Giao Diện Hỗ Trợ Giảm Tính Trì Hoãn", "📊 Báo cáo Thống kê (KHKT)"])
 with tab1:
     # Đọc tham số từ URL
