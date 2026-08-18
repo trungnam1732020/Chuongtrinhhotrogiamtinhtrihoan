@@ -11,13 +11,29 @@ import gspread
 # Cấu hình kết nối Google Sheets qua Service Account từ secrets
 @st.cache_resource
 def get_gsheet_client():
-    # Lấy toàn bộ thông tin xác thực từ secrets.toml
-    creds_info = dict(st.secrets["connections"]["gsheets"])
-    # Đảm bảo trường type luôn được gán đúng
-    creds_info["type"] = "service_account"
-    scope = ["https://www.googleapis.com/auth/spreadsheets",
-            "https://www.googleapis.com/auth/drive"]
-    creds = Credentials.from_service_account_info(creds_info, scopes=scope)
+    # 1. Trích xuất chính xác dict chứa thông tin service_account từ [connections.gsheets]
+    creds_dict = st.secrets["connections"]["gsheets"]
+    
+    # 2. Tạo dictionary đúng chuẩn cho Google OAuth2
+    info = {
+        "type": "service_account",
+        "project_id": creds_dict["project_id"],
+        "private_key_id": creds_dict["private_key_id"],
+        "private_key": creds_dict["private_key"],
+        "client_email": creds_dict["client_email"],
+        "client_id": creds_dict["client_id"],
+        "auth_uri": creds_dict["auth_uri"],
+        "token_uri": creds_dict["token_uri"],
+        "auth_provider_x509_cert_url": creds_dict["auth_provider_x509_cert_url"],
+        "client_x509_cert_url": creds_dict["client_x509_cert_url"],
+    }
+    
+    scope = [
+        "https://www.googleapis.com/auth/spreadsheets",
+        "https://www.googleapis.com/auth/drive"
+    ]
+    
+    creds = Credentials.from_service_account_info(info, scopes=scope)
     client = gspread.authorize(creds)
     return client
 def get_worksheet():
