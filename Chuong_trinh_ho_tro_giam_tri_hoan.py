@@ -5,10 +5,23 @@ from datetime import datetime
 import pandas as pd
 import os
 import plotly.express as px
-from streamlit_gsheets import GSheetsConnection
-# Chỉ định rõ ràng sử dụng kết nối service account từ [connections.gsheets] trong secrets
-conn = st.connection("gsheets", type=GSheetsConnection)
-df = conn.read()
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
+
+# Cấu hình kết nối Google Sheets qua Service Account từ secrets
+@st.cache_resource
+def get_gsheet_client():
+    creds_dict = dict(st.secrets["connections"]["gsheets"])
+    scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+    creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
+    client = gspread.authorize(creds)
+    return client
+
+# Mở Google Sheet (Sheet1)
+def get_worksheet():
+    client = get_gsheet_client()
+    sheet_url = st.secrets["connections"]["gsheets"]["spreadsheet"]
+    return client.open_by_url(sheet_url).sheet1
 tab1, tab2 = st.tabs(["⏱️ Giao Diện Hỗ Trợ Giảm Tính Trì Hoãn", "📊 Báo cáo Thống kê (KHKT)"])
 with tab1:
     # Đọc tham số từ URL
@@ -114,16 +127,13 @@ with tab1:
                 thoi_gian = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
                 try:
-        # Đọc dữ liệu hiện tại từ Sheet (ttl=0 để luôn lấy dữ liệu mới nhất)
-                    existing_data = conn.read(ttl=0)
-                    # Tạo DataFrame dòng mới
-                    new_data = pd.DataFrame(
-                        [[thoi_gian, danh_gia, final_reason]],
-                        columns=["Thời gian", "Mức độ", "Lý do"])
-                    # Nối dòng mới vào và cập nhật lên Google Sheets
-                    updated_df = pd.concat([existing_data, new_data], ignore_index=True)
-                    conn.update(data=updated_df)
-                    st.session_state.risk_score=None
+    # Kết nối đến Sheet
+                    worksheet = get_worksheet()
+                    
+                    # Ghi trực tiếp dòng dữ liệu mới vào cuối bảng tính (Append Row)
+                    worksheet.append_row([thoi_gian, danh_gia, final_reason])
+                    
+                    st.session_state.risk_score = None
                     st.success("🎉 Đã lưu phản hồi thành công lên Google Sheets!")
                     st.session_state.show_feedback = False
                     if "time_left" in st.session_state:
@@ -137,7 +147,9 @@ with tab2:
         # ĐẢM BẢO ĐỌC LẠI FILE CSV MỖI LẦN VÀO TAB
     try:
         # Đọc dữ liệu thực tế từ Google Sheets
-        df = conn.read(ttl=0)
+        worksheet = get_worksheet()
+        data = worksheet.get_all_records()
+        df = pd.DataFrame(data)
 
         if not df.empty and "Mức độ" in df.columns:
             # 1. Biểu đồ tròn (Pie Chart)
