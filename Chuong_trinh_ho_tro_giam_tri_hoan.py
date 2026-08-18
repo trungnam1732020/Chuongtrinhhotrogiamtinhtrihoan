@@ -30,8 +30,7 @@ def get_gsheet_client():
     
     scope = [
         "https://www.googleapis.com/auth/spreadsheets",
-        "https://www.googleapis.com/auth/drive"
-    ]
+        "https://www.googleapis.com/auth/drive"]
     
     creds = Credentials.from_service_account_info(info, scopes=scope)
     client = gspread.authorize(creds)
@@ -39,6 +38,11 @@ def get_gsheet_client():
 def get_worksheet():
     client = get_gsheet_client()
     sheet_url = st.secrets["connections"]["gsheets"]["spreadsheet"]
+    # 1. Mở file Google Sheet bằng URL
+    sh = client.open_by_url(sheet_url)
+    # 2. Lấy trang tính đầu tiên (Index 0)
+    worksheet = sh.get_worksheet(0)
+    return worksheet
 tab1, tab2 = st.tabs(["⏱️ Giao Diện Hỗ Trợ Giảm Tính Trì Hoãn", "📊 Báo cáo Thống kê (KHKT)"])
 with tab1:
     # Đọc tham số từ URL
@@ -144,19 +148,20 @@ with tab1:
                 thoi_gian = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
                 try:
-    # Kết nối đến Sheet
                     worksheet = get_worksheet()
                     
-                    # Ghi trực tiếp dòng dữ liệu mới vào cuối bảng tính (Append Row)
-                    worksheet.append_row([thoi_gian, danh_gia, final_reason])
-                    
-                    st.session_state.risk_score = None
-                    st.success("🎉 Đã lưu phản hồi thành công lên Google Sheets!")
-                    st.session_state.show_feedback = False
-                    if "time_left" in st.session_state:
-                        del st.session_state["time_left"]
-                    time.sleep(1)
-                    st.rerun()
+                    # Đảm bảo worksheet không bị None trước khi ghi
+                    if worksheet:
+                        worksheet.append_row([thoi_gian, danh_gia, final_reason])
+                        st.session_state.risk_score = None
+                        st.success("🎉 Đã lưu phản hồi thành công lên Google Sheets!")
+                        st.session_state.show_feedback = False
+                        if "time_left" in st.session_state:
+                            del st.session_state["time_left"]
+                        time.sleep(1)
+                        st.rerun()
+                    else:
+                        st.error("Không thể kết nối tới Trang tính (Worksheet). Hãy kiểm tra lại URL Sheet.")
                 except Exception as e:
                     st.error(f"Lỗi khi lưu lên Google Sheets: {e}")
 with tab2:
