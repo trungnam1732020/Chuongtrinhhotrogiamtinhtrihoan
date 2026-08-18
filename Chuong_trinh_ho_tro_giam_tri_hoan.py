@@ -168,42 +168,55 @@ with tab2:
     st.header("📊 Kết quả Thực nghiệm & Đánh giá Hiệu quả")
         # ĐẢM BẢO ĐỌC LẠI FILE CSV MỖI LẦN VÀO TAB
     try:
-        # Đọc dữ liệu thực tế từ Google Sheets
+    # Đọc dữ liệu thực tế từ Google Sheets
         worksheet = get_worksheet()
         data = worksheet.get_all_records()
         df = pd.DataFrame(data)
 
-        if not df.empty and "Mức độ" in df.columns:
-            # 1. Biểu đồ tròn (Pie Chart)
-            fig = px.pie(
-                df,
-                names="Mức độ",
-                title="Tỉ lệ đánh giá",
-                color="Mức độ",
-                color_discrete_map={
-                    "😄 Rất hiệu quả": "#2ecc71",
-                    "Khá ổn": "#f1c40f",
-                    "😞 Không hiệu quả": "#e74c3c",
-                },
-            )
-            st.plotly_chart(fig, use_container_width=True)
+        if not df.empty:
+            # Chuẩn hóa tên cột để tránh lỗi viết hoa / viết thường giữa Sheet và Code
+            # Đổi tất cả tên cột về dạng chuẩn
+            column_map = {col: col.strip().title() for col in df.columns}
+            df.rename(columns=column_map, inplace=True)
 
-            # 2. Bảng lý do chi tiết (Đảo ngược để dòng mới nhất nằm trên)
-            st.subheader("📝 Danh sách lý do xao nhãng")
-            st.dataframe(
-                df.iloc[::-1], hide_index=True, use_container_width=True
-            )
+            # Lấy tên cột Mức độ (dù là 'Mức Độ' hay 'Mức độ')
+            muc_do_col = [c for c in df.columns if "Mức" in c]
 
-            # 3. Nút Tải file CSV sạch
-            csv_data = df.to_csv(index=False, encoding="utf-8-sig")
-            st.download_button(
-                label="📥 Tải báo cáo CSV",
-                data=csv_data,
-                file_name="baocao_pomodoro.csv",
-                mime="text/csv",
-            )
+            if muc_do_col:
+                target_col = muc_do_col[0]
+
+                # 1. Biểu đồ tròn (Pie Chart)
+                fig = px.pie(
+                    df,
+                    names=target_col,
+                    title="Tỉ lệ đánh giá",
+                    color=target_col,
+                    color_discrete_map={
+                        "😄 Rất hiệu quả": "#2ecc71",
+                        "Khá ổn": "#f1c40f",
+                        "😞 Không hiệu quả": "#e74c3c",
+                    },
+                )
+                st.plotly_chart(fig, use_container_width=True)
+
+                # 2. Bảng lý do chi tiết (Đảo ngược để dòng mới nhất nằm trên)
+                st.subheader("📝 Danh sách lý do xao nhãng")
+                st.dataframe(
+                    df.iloc[::-1], hide_index=True, use_container_width=True
+                )
+
+                # 3. Nút Tải file CSV sạch
+                csv_data = df.to_csv(index=False, encoding="utf-8-sig")
+                st.download_button(
+                    label="📥 Tải báo cáo CSV",
+                    data=csv_data,
+                    file_name="baocao_pomodoro.csv",
+                    mime="text/csv",
+                )
+            else:
+                st.info("Chưa tìm thấy cột 'Mức Độ' trong dữ liệu Google Sheets.")
         else:
             st.info("Chưa có dữ liệu phản hồi nào trên Google Sheets.")
 
     except Exception as e:
-        st.error(f"Chưa kết nối được với Google Sheets. Vui lòng kiểm tra file secrets.toml! Lỗi: {e}")
+        st.error(f"Lỗi khi tải dữ liệu từ Google Sheets: {e}")
