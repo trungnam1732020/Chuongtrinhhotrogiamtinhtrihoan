@@ -5,8 +5,8 @@ from datetime import datetime
 import pandas as pd
 import os
 import plotly.express as px
+from google.oauth2.service_account import Credentials
 import gspread
-from oauth2client.service_account import Credentials
 
 # Cấu hình kết nối Google Sheets qua Service Account từ secrets
 @st.cache_resource
