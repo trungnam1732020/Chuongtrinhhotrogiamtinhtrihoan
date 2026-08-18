@@ -6,6 +6,7 @@ import pandas as pd
 import os
 import plotly.express as px
 from streamlit_gsheets import GSheetsConnection
+# Chỉ định rõ ràng sử dụng kết nối service account từ [connections.gsheets] trong secrets
 conn = st.connection("gsheets", type=GSheetsConnection)
 df = conn.read()
 tab1, tab2 = st.tabs(["⏱️ Giao Diện Hỗ Trợ Giảm Tính Trì Hoãn", "📊 Báo cáo Thống kê (KHKT)"])
