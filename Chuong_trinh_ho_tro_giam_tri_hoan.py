@@ -86,16 +86,53 @@ def diagnose_user(user_history):
         # 1. CẤP ĐỘ ĐỎ: Có từ 2 phiên xao nhãng trở lên
         if fails_count >= 2:
             return f"🔴 **CẢNH BÁO CHẨN ĐOÁN (Phiên {total_sessions}):** Bạn đang gặp khó khăn trong việc tập trung. Khuyên dùng chu kỳ ngắn 15-20 phút."
-
         # 2. CẤP ĐỘ VÀNG: Chỉ còn 1 phiên xao nhãng (Đang trên đà cải thiện)
         elif fails_count == 1:
-            return f"🟡 **GHI NHẬN TIẾN BỘ (Phiên {total_sessions}):** Bạn đang lấy lại sự tập trung rất tốt! Hãy tiếp tục duy trì đà này nhé."
-
+            return f"🟡 **GHI NHẬN TIẾN BỘ (Phiên {total_sessions}):** Bạn đang có sự tập trung rất tốt! Hãy tiếp tục duy trì đà này nhé."
         # 3. CẤP ĐỘ XANH: 0 phiên xao nhãng (Phong độ hoàn hảo)
         else:
             return f"🟢 **CHẨN ĐOÁN (Phiên {total_sessions}):** Phong độ học tập của bạn đang duy trì rất tốt!"
     return f"💡 **CHẨN ĐOÁN ({total_sessions}/2 phiên):** Cần hoàn thành thêm phiên học để mô hình đưa ra dự đoán xu hướng."
+def get_recommendation(user_history):
+    """Gợi ý phương pháp học tập tối ưu dựa trên chẩn đoán"""
+    total_sessions = len(user_history)
 
+    if total_sessions < 2:
+        return {
+            "time": 25,
+            "method": "⏱️ Pomodoro Chuẩn (25 phút)",
+            "tip": "Hoàn thành thêm phiên để hệ thống phân tích nhịp độ cá nhân của bạn.",
+        }
+
+    recent = user_history.tail(4)
+    fails_count = len(
+        recent[
+            recent["Mức Độ"]
+            .astype(str)
+            .str.contains("Không hiệu quả", na=False)
+        ]
+    )
+    # 1. Khuyên giảm tải nếu đang xao nhãng
+    if fails_count >= 2:
+        return {
+            "time": 15,
+            "method": "⚡ Micro-Pomodoro (15 Phút) + Quy tắc 5 Phút",
+            "tip": "Năng lượng của bạn đang thấp. Hãy chia nhỏ mục tiêu và làm từng chút một!",
+        }
+    # 2. Khuyên duy trì nhịp độ nếu đang cải thiện
+    elif fails_count == 1:
+        return {
+            "time": 25,
+            "method": "🎯 Pomodoro Tiêu chuẩn (25 Phút)",
+            "tip": "Đà tập trung đang trở lại. Giữ nguyên nhịp độ này và loại bỏ thiết bị gây xao nhãng.",
+        }
+    # 3. Khuyên bứt phá nếu phong độ xuất sắc
+    else:
+        return {
+            "time": 45,
+            "method": "🚀 Deep Work / Flow Zone (45 Phút)",
+            "tip": "Tập trung của bạn đang ở đỉnh cao! Hãy thử thách bản thân với các bài tập khó hơn.",
+        }
 # 3. SIDEBAR: NHẬN DIỆN NGƯỜI DÙNG (CẮT DỮ LIỆU CÁ NHÂN)
 if "is_running" not in st.session_state:
     st.session_state.is_running = False
@@ -156,6 +193,13 @@ with tab1:
     # --- LẤY DỮ LIỆU VÀ HIỂN THỊ CHẨN ĐOÁN LỊCH SỬ ---
     user_history = get_user_history(user_id)
     st.info(diagnose_user(user_history))
+    rec = get_recommendation(user_history)
+    with st.expander("💡 **PHƯƠNG PHÁP HỌC TẬP TỐI ƯU CHO BẠN**", expanded=True):
+        st.markdown(f"👉 **Phương pháp:** {rec['method']}")
+        st.markdown(f"💬 **Lời khuyên:** *{rec['tip']}*")
+        st.info(f"🎯 **Thời gian khuyên dùng:** {rec['time']} phút/phiên")
+
+    st.divider()
 
     task_name = st.text_input("Tên bài tập/nhiệm vụ:", "Bài tập Toán", disabled=is_disabled)
     difficulty = st.slider("Độ khó cảm nhận (1: Rất dễ - 5: Rất khó):", 1, 5, 3, disabled=is_disabled)
