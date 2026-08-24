@@ -8,6 +8,7 @@ import plotly.express as px
 from google.oauth2.service_account import Credentials
 import gspread
 import re
+import zoneinfo
 
 # 1. CẤU HÌNH KẾT NỐI GOOGLE SHEETS
 
@@ -229,6 +230,7 @@ with tab1:
             
             if submit_button:
                 final_reason = danh_sach_ly_do.strip() if danh_sach_ly_do.strip() != "" else "Không có"
+                now_vn = datetime.now(zoneinfo.ZoneInfo("Asia/Ho_Chi_Minh"))
                 thoi_gian = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 
                 try:
