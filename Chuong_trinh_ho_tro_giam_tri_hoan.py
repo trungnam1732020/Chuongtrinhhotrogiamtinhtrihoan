@@ -73,7 +73,7 @@ def diagnose_user(user_history):
     """Mô hình chẩn đoán linh hoạt 3 cấp độ: Cảnh báo - Tiến bộ - Tốt"""
     total_sessions = len(user_history)
     if total_sessions >= 2:
-        recent = user_history.tail(5)
+        recent = user_history.tail(4)
         # Đếm số phiên 'Không hiệu quả' trong 5 phiên gần nhất
         fails_count = len(
             recent[
