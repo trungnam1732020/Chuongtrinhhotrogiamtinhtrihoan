@@ -10,47 +10,70 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 
-# 1. CẤU HÌNH KẾT NỐI GOOGLE SHEETS
+# =========================================================
+# 1. CẤU HÌNH KẾT NỐI GOOGLE SHEETS (An toàn)
+# =========================================================
+
 
 @st.cache_resource
 def get_gsheet_client():
-    creds_dict = st.secrets["connections"]["gsheets"]
-    info = {
-        "type": "service_account",
-        "project_id": creds_dict["project_id"],
-        "private_key_id": creds_dict["private_key_id"],
-        "private_key": creds_dict["private_key"],
-        "client_email": creds_dict["client_email"],
-        "client_id": creds_dict["client_id"],
-        "auth_uri": creds_dict["auth_uri"],
-        "token_uri": creds_dict["token_uri"],
-        "auth_provider_x509_cert_url": creds_dict[
-            "auth_provider_x509_cert_url"],
-        "client_x509_cert_url": creds_dict["client_x509_cert_url"]}
-    scope = [
-        "https://www.googleapis.com/auth/spreadsheets",
-        "https://www.googleapis.com/auth/drive"]
-    creds = Credentials.from_service_account_info(info, scopes=scope)
-    return gspread.authorize(creds)
+    try:
+        creds_dict = st.secrets["connections"]["gsheets"]
+        info = {
+            "type": "service_account",
+            "project_id": creds_dict["project_id"],
+            "private_key_id": creds_dict["private_key_id"],
+            "private_key": creds_dict["private_key"],
+            "client_email": creds_dict["client_email"],
+            "client_id": creds_dict["client_id"],
+            "auth_uri": creds_dict["auth_uri"],
+            "token_uri": creds_dict["token_uri"],
+            "auth_provider_x509_cert_url": creds_dict[
+                "auth_provider_x509_cert_url"
+            ],
+            "client_x509_cert_url": creds_dict["client_x509_cert_url"],
+        }
+        scope = [
+            "https://www.googleapis.com/auth/spreadsheets",
+            "https://www.googleapis.com/auth/drive",
+        ]
+        creds = Credentials.from_service_account_info(info, scopes=scope)
+        return gspread.authorize(creds)
+    except Exception as e:
+        st.error(f"⚠️ Lỗi cấu hình Secrets / Google Sheets: {e}")
+        return None
 
 
 def get_worksheet():
     client = get_gsheet_client()
-    sheet_url = st.secrets["connections"]["gsheets"]["spreadsheet"]
-    sh = client.open_by_url(sheet_url)
-    return sh.get_worksheet(0)
+    if not client:
+        return None
+    try:
+        sheet_url = st.secrets["connections"]["gsheets"]["spreadsheet"]
+        sh = client.open_by_url(sheet_url)
+        return sh.get_worksheet(0)
+    except Exception as e:
+        st.error(f"⚠️ Lỗi mở Google Sheet: {e}")
+        return None
 
+
+# =========================================================
 # 2. HÀM XỬ LÝ DỮ LIỆU CÁ NHÂN HÓA, CHẨN ĐOÁN & THEME
+# =========================================================
+
 
 @st.cache_data(ttl=15)
 def load_sheet_data():
-    """Chỉ gọi API đọc Google Sheets tối đa 1 lần mỗi 15 giây"""
+    """Tải dữ liệu an toàn không gây sập trang"""
     try:
         worksheet = get_worksheet()
-        data = worksheet.get_all_records()
-        return pd.DataFrame(data)
+        if worksheet:
+            data = worksheet.get_all_records()
+            return pd.DataFrame(data)
     except Exception:
-        return pd.DataFrame()
+        pass
+    return pd.DataFrame()
+
 
 def normalize_id(text):
     if not text:
@@ -62,12 +85,16 @@ def normalize_id(text):
     text = re.sub(r"\s+", " ", text)
     return text.strip()
 
+
 def get_user_history(user_id):
+    if not user_id or not user_id.strip():
+        return pd.DataFrame()
     df = load_sheet_data()
     if not df.empty and "User ID" in df.columns:
         clean_target = normalize_id(user_id)
         return df[df["User ID"].apply(normalize_id) == clean_target]
     return pd.DataFrame()
+
 
 def diagnose_user(user_history):
     total_sessions = len(user_history)
@@ -77,7 +104,9 @@ def diagnose_user(user_history):
             recent[
                 recent["Mức Độ"]
                 .astype(str)
-                .str.contains("Không hiệu quả", na=False)])
+                .str.contains("Không hiệu quả", na=False)
+            ]
+        )
 
         if fails_count >= 2:
             return f"🔴 **CẢNH BÁO CHẨN ĐOÁN (Phiên {total_sessions}):** Bạn đang gặp khó khăn trong việc tập trung. Khuyên dùng chu kỳ ngắn 15-20 phút."
@@ -88,13 +117,15 @@ def diagnose_user(user_history):
 
     return f"💡 **CHẨN ĐOÁN ({total_sessions}/2 phiên):** Cần hoàn thành thêm phiên học để mô hình đưa ra dự đoán xu hướng."
 
+
 def get_recommendation(user_history):
     total_sessions = len(user_history)
     if total_sessions < 2:
         return {
             "time": 25,
             "method": "⏱️ Pomodoro Chuẩn (25 phút)",
-            "tip": "Hoàn thành thêm phiên để hệ thống phân tích nhịp độ cá nhân của bạn.",}
+            "tip": "Hoàn thành thêm phiên để hệ thống phân tích nhịp độ cá nhân của bạn.",
+        }
 
     recent = user_history.tail(4)
     fails_count = len(
@@ -102,7 +133,8 @@ def get_recommendation(user_history):
             recent["Mức Độ"]
             .astype(str)
             .str.contains("Không hiệu quả", na=False)
-        ])
+        ]
+    )
 
     if fails_count >= 2:
         return {
@@ -122,8 +154,9 @@ def get_recommendation(user_history):
             "method": "🚀 Deep Work / Flow Zone (45 Phút)",
             "tip": "Sự Tập trung của bạn đang ở đỉnh cao! Hãy đặt điện thoại của bạn cách 2m và thử thách bản thân với các bài tập khó hơn.",
         }
+
+
 def apply_dynamic_theme(user_history=None):
-    """Đổi màu nền ứng dụng dựa trên phong độ chẩn đoán"""
     if user_history is None or len(user_history) < 2:
         return
 
@@ -152,27 +185,44 @@ def apply_dynamic_theme(user_history=None):
             unsafe_allow_html=True,
         )
 
-# 3. SIDEBAR: NHẬN DIỆN NGƯỜI DÙNG & GÓC TẬP TRUNG
+
+# =========================================================
+# 3. KHO TẠO SESSION STATE BAN ĐẦU (Khóa chống trôi)
+# =========================================================
 
 if "is_running" not in st.session_state:
     st.session_state.is_running = False
+if "pomo_running" not in st.session_state:
+    st.session_state.pomo_running = False
+if "show_feedback" not in st.session_state:
+    st.session_state.show_feedback = False
+if "risk_score" not in st.session_state:
+    st.session_state.risk_score = None
+
+# =========================================================
+# 4. SIDEBAR: NHẬN DIỆN NGƯỜI DÙNG & GÓC TẬP TRUNG
+# =========================================================
 
 with st.sidebar:
     st.header("👤 Định danh Học sinh")
     st.caption(
-        "💡 **Mẹo:** Nên nhập **Họ tên + Lớp** (vd: `Đoàn Trung Nam 11N1`) hoặc 1 **Email** duy nhất."
+        "💡 **Mẹo:** Nên nhập **Họ tên + Lớp** (vd: `Đoàn Trung Nam 11N1`)"
     )
-    is_running = st.session_state.get("is_running", False)
+
     user_id = st.text_input(
         "Nhập Họ tên / Email của bạn:",
         placeholder="Ví dụ: HS10A1_05",
         key="user_id_input",
-        disabled=is_running,
+        disabled=st.session_state.pomo_running,
     )
-    if not user_id.strip():
-        st.warning("⚠️ Vui lòng nhập Mã học sinh để tải lịch sử cá nhân hóa!")
-    st.success(f"Xin chào, **{user_id}**!")
+
+    if user_id.strip():
+        st.success(f"Xin chào, **{user_id}**!")
+    else:
+        st.info("👆 Vui lòng nhập thông tin để bắt đầu.")
+
     st.divider()
+
     st.subheader("🎧 Góc Tập Trung")
     music_option = st.selectbox(
         "Chọn nhạc nền (Không quảng cáo):",
@@ -200,62 +250,38 @@ with st.sidebar:
             format="audio/mp3",
         )
 
-# 4. GIAO DIỆN CHÍNH (TABS)
+
+# =========================================================
+# 5. GIAO DIỆN CHÍNH (TABS)
+# =========================================================
 
 tab1, tab2 = st.tabs(
     ["⏱️ Giao Diện Hỗ Trợ Giảm Tính Trì Hoãn", "📊 Báo cáo Thống kê (KHKT)"]
 )
 
 with tab1:
+    st.title("🎯 Trợ Lý Dự Đoán & Cảnh Báo Trì Hoãn Học Tập")
+
     if not user_id.strip():
         st.warning(
-            "⚠️ Vui lòng nhập **Họ tên / Mã học sinh** ở thanh bên trái (Sidebar) để tải dữ liệu cá nhân hóa và bắt đầu học!"
+            "⚠️ Vui lòng nhập **Họ tên / Mã học sinh** ở khung bên trái (Sidebar) để tải dữ liệu cá nhân hóa!"
         )
     else:
-        # 💡 Lấy dữ liệu cá nhân hóa TRƯỚC khi đổi Theme và Chẩn đoán
+        # Tải dữ liệu an toàn
         user_history = get_user_history(user_id)
-        # 🎨 Áp dụng màu nền tự động
         apply_dynamic_theme(user_history)
+
         query_params = st.query_params
         is_test_mode = query_params.get("test") == "true"
 
-        if "show_feedback" not in st.session_state:
-            st.session_state.show_feedback = False
-        if "risk_score" not in st.session_state:
-            st.session_state.risk_score = None
-        if "pomo_running" not in st.session_state:
-            st.session_state.pomo_running = False
-
         is_disabled = st.session_state.pomo_running
-
-        def countdown_timer(seconds):
-            st.session_state.pomo_running = True
-            st.session_state.is_running = True
-            if "time_left" not in st.session_state:
-                st.session_state.time_left = seconds
-
-            timer_placeholder = st.empty()
-            mins, secs = divmod(st.session_state.time_left, 60)
-            st.header(f"⏱️ {mins:02d}:{secs:02d}")
-
-            if st.session_state.pomo_running and st.session_state.time_left > 0:
-                time.sleep(1)
-                st.session_state.time_left -= 1
-                st.rerun()
-            elif st.session_state.time_left == 0:
-                timer_placeholder.success(
-                    "🎉 Bạn đã hoàn thành xuất sắc một phiên Pomodoro! Hãy nghỉ ngơi ít phút."
-                )
-                st.session_state.pomo_running = False
-                st.session_state.is_running = False
-                st.session_state.show_feedback = True
-
-        st.title("🎯 Trợ Lý Dự Đoán & Cảnh Báo Trì Hoãn Học Tập")
 
         # --- HIỂN THỊ CHẨN ĐOÁN LỊCH SỬ ---
         st.info(diagnose_user(user_history))
         rec = get_recommendation(user_history)
-        with st.expander("💡 **PHƯƠNG PHÁP HỌC TẬP TỐI ƯU CHO BẠN**", expanded=True):
+        with st.expander(
+            "💡 **PHƯƠNG PHÁP HỌC TẬP TỐI ƯU CHO BẠN**", expanded=True
+        ):
             st.markdown(f"👉 **Phương pháp:** {rec['method']}")
             st.markdown(f"💬 **Lời khuyên:** *{rec['tip']}*")
             st.info(f"🎯 **Thời gian khuyên dùng:** {rec['time']} phút/phiên")
@@ -280,7 +306,11 @@ with tab1:
             disabled=is_disabled,
         )
         delay_count = st.number_input(
-            "Số lần bạn đã dời deadline bài này:", 0, 10, 0, disabled=is_disabled
+            "Số lần bạn đã dời deadline bài này:",
+            0,
+            10,
+            0,
+            disabled=is_disabled,
         )
 
         if st.button("Phân tích nguy cơ trì hoãn", disabled=is_disabled):
@@ -313,31 +343,6 @@ with tab1:
                 st.write(
                     "💡 **Giải pháp điều chỉnh:** Dùng kỹ thuật Pomodoro chia nhỏ thời gian."
                 )
-
-                if is_test_mode:
-                    st.warning("⚠️ Đang ở chế độ TEST (Thử nghiệm 10 giây)")
-                    countdown_timer(10)
-                else:
-                    mode = st.radio(
-                        "Chọn Chế Độ Tập Trung:",
-                        (
-                            "15 phút (Micro-Pomodoro)",
-                            "25 phút (Pomodoro chuẩn)",
-                            "45 phút (1 Tiết học)",
-                        ),
-                        index=None,
-                        key="pomodoro_mode_radio",
-                    )
-                    if mode == "15 phút (Micro-Pomodoro)":
-                        countdown_timer(900)
-                    elif mode == "25 phút (Pomodoro chuẩn)":
-                        countdown_timer(1500)
-                    elif mode == "45 phút (1 Tiết học)":
-                        countdown_timer(2700)
-                    else:
-                        if "time_left" in st.session_state:
-                            del st.session_state["time_left"]
-                        st.info("👈 Chọn một chế độ bên trên để bắt đầu.")
             else:
                 st.success(
                     "✅ NGUY CƠ THẤP! Bạn đang có trạng thái tốt, hãy bắt đầu ngay."
@@ -346,9 +351,17 @@ with tab1:
                     "**Gợi Ý:** Hãy ưu tiên bài quan trọng nhất khi còn tỉnh táo!"
                 )
 
+            # --- KHU VỰC BẮT ĐẦU ĐỒNG HỒ POMODORO ---
+            st.write("---")
+            st.subheader("⏱️ Chọn Chế Độ & Bắt Đầu Học Tập")
+
+            if not st.session_state.pomo_running:
                 if is_test_mode:
                     st.warning("⚠️ Đang ở chế độ TEST (Thử nghiệm 10 giây)")
-                    countdown_timer(10)
+                    if st.button("▶️ Bắt đầu 10 giây Test"):
+                        st.session_state.time_left = 10
+                        st.session_state.pomo_running = True
+                        st.rerun()
                 else:
                     mode = st.radio(
                         "Chọn Chế Độ Tập Trung:",
@@ -360,16 +373,39 @@ with tab1:
                         index=None,
                         key="pomodoro_mode_radio",
                     )
-                    if mode == "15 phút (Micro-Pomodoro)":
-                        countdown_timer(900)
-                    elif mode == "25 phút (Pomodoro chuẩn)":
-                        countdown_timer(1500)
-                    elif mode == "45 phút (1 Tiết học)":
-                        countdown_timer(2700)
-                    else:
-                        if "time_left" in st.session_state:
-                            del st.session_state["time_left"]
-                        st.info("👈 Chọn một chế độ bên trên để bắt đầu.")
+
+                    if st.button("▶️ BẮT ĐẦU TẬP TRUNG HOÀN THÀNH BÀI"):
+                        if mode == "15 phút (Micro-Pomodoro)":
+                            st.session_state.time_left = 900
+                            st.session_state.pomo_running = True
+                            st.rerun()
+                        elif mode == "25 phút (Pomodoro chuẩn)":
+                            st.session_state.time_left = 1500
+                            st.session_state.pomo_running = True
+                            st.rerun()
+                        elif mode == "45 phút (1 Tiết học)":
+                            st.session_state.time_left = 2700
+                            st.session_state.pomo_running = True
+                            st.rerun()
+                        else:
+                            st.warning("⚠️ Vui lòng chọn một chế độ thời gian!")
+
+            # --- QUÁ TRÌNH ĐẾM NGƯỢC ---
+            if st.session_state.pomo_running:
+                timer_placeholder = st.empty()
+                mins, secs = divmod(st.session_state.time_left, 60)
+                timer_placeholder.header(f"⏱️ Đang học: {mins:02d}:{secs:02d}")
+
+                if st.session_state.time_left > 0:
+                    time.sleep(1)
+                    st.session_state.time_left -= 1
+                    st.rerun()
+                else:
+                    timer_placeholder.success(
+                        "🎉 Bạn đã hoàn thành xuất sắc một phiên Pomodoro!"
+                    )
+                    st.session_state.pomo_running = False
+                    st.session_state.show_feedback = True
 
         # --- FORM ĐÁNH GIÁ PHIÊN HỌC ---
         if st.session_state.get("show_feedback", False):
@@ -392,9 +428,9 @@ with tab1:
                 )
 
                 danh_sach_ly_do = st.text_input(
-                    "Lý do xao nhãng (Mô hình gợi ý từ lịch sử của bạn):",
+                    "Lý do xao nhãng (Gợi ý từ lịch sử cá nhân):",
                     value=suggested_reason,
-                    placeholder="Ví dụ: Bị thông báo điện thoại làm phiền, mệt mỏi...",
+                    placeholder="Ví dụ: Thông báo điện thoại, mệt mỏi...",
                 )
 
                 submit_button = st.form_submit_button(label="Gửi đánh giá")
@@ -408,28 +444,32 @@ with tab1:
                     now_vn = datetime.now(zoneinfo.ZoneInfo("Asia/Ho_Chi_Minh"))
                     thoi_gian = now_vn.strftime("%Y-%m-%d %H:%M:%S")
 
-                    try:
-                        worksheet = get_worksheet()
-                        if worksheet:
+                    worksheet = get_worksheet()
+                    if worksheet:
+                        try:
                             worksheet.append_row(
                                 [user_id, thoi_gian, danh_gia, final_reason]
                             )
                             st.session_state.risk_score = None
-                            st.success(
-                                "🎉 Đã lưu phản hồi thành công và cập nhật mô hình cá nhân hóa!"
-                            )
+                            st.success("🎉 Đã lưu phản hồi thành công!")
                             st.session_state.show_feedback = False
-                            st.session_state.is_running = False
                             st.session_state.pomo_running = False
                             if "time_left" in st.session_state:
                                 del st.session_state["time_left"]
                             time.sleep(1)
                             st.cache_data.clear()
                             st.rerun()
-                    except Exception as e:
-                        st.error(f"Lỗi khi lưu lên Google Sheets: {e}")
+                        except Exception as e:
+                            st.error(f"Lỗi lưu Google Sheets: {e}")
+                    else:
+                        st.error(
+                            "Không thể kết nối Google Sheets để lưu dữ liệu."
+                        )
 
-# 5. TAB BÁO CÁO THỐNG KÊ (KHKT)
+
+# =========================================================
+# 6. TAB BÁO CÁO THỐNG KÊ (KHKT)
+# =========================================================
 
 with tab2:
     st.header("📊 Kết quả Thực nghiệm & Đánh giá Hiệu quả")
@@ -457,7 +497,7 @@ with tab2:
                 )
                 st.plotly_chart(fig, use_container_width=True)
 
-                st.subheader("📝 Danh sách lý do xao nhãng")
+                st.subheader("📝 Danh sách phản hồi")
                 st.dataframe(
                     df.iloc[::-1], hide_index=True, use_container_width=True
                 )
