@@ -157,6 +157,7 @@ def get_recommendation(user_history):
 
 
 def apply_dynamic_theme(user_history=None):
+    """Đổi màu nền VÀ màu chữ tương ứng để tránh bị tàng hình trong Dark Mode"""
     if user_history is None or len(user_history) < 2:
         return
 
@@ -169,22 +170,40 @@ def apply_dynamic_theme(user_history=None):
         ]
     )
 
+    # Đặt style đổi cả màu nền (background) lẫn màu chữ (color)
     if fails_count >= 2:
+        # Trạng thái Cảnh báo: Nền hồng nhạt
         st.markdown(
-            "<style>.stApp { background-color: #FFF5F5 !important; }</style>",
+            """
+            <style>
+                .stApp { background-color: #FFF5F5 !important; }
+                .stApp p, .stApp h1, .stApp h2, .stApp h3, .stApp span, .stApp label { color: #2D3748 !important; }
+            </style>
+            """,
             unsafe_allow_html=True,
         )
     elif fails_count == 1:
+        # Trạng thái Tiến bộ: Nền vàng nhạt
         st.markdown(
-            "<style>.stApp { background-color: #FFFFF0 !important; }</style>",
+            """
+            <style>
+                .stApp { background-color: #FFFFF0 !important; }
+                .stApp p, .stApp h1, .stApp h2, .stApp h3, .stApp span, .stApp label { color: #2D3748 !important; }
+            </style>
+            """,
             unsafe_allow_html=True,
         )
     else:
+        # Trạng thái Tốt: Nền xanh nhạt
         st.markdown(
-            "<style>.stApp { background-color: #F0FFF4 !important; }</style>",
+            """
+            <style>
+                .stApp { background-color: #F0FFF4 !important; }
+                .stApp p, .stApp h1, .stApp h2, .stApp h3, .stApp span, .stApp label { color: #2D3748 !important; }
+            </style>
+            """,
             unsafe_allow_html=True,
         )
-
 
 # =========================================================
 # 3. KHO TẠO SESSION STATE BAN ĐẦU (Khóa chống trôi)
