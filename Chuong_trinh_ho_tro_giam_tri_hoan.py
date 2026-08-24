@@ -101,10 +101,11 @@ def diagnose_user(user_history):
 with st.sidebar:
     st.header("👤 Định danh Học sinh")
     st.caption("💡 **Mẹo:** Nên nhập **Họ tên + Lớp** (vd: `Đoàn Trung Nam 11N1`) hoặc 1 **Email** duy nhất để hệ thống theo dõi chính xác nhất.")
+    is_running = st.session_state.get("is_running", False)
     user_id = st.text_input(
         "Nhập Họ tên / Email của bạn:", 
         placeholder="Ví dụ: HS10A1_05", 
-        key="user_id_input", disabled=is_disabled)
+        key="user_id_input", disabled=is_running)
     # Bắt buộc người dùng nhập Mã HS trước khi chạy ứng dụng
     if not user_id.strip():
         st.warning("⚠️ Vui lòng nhập Mã học sinh để tải lịch sử cá nhân hóa!")
