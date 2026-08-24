@@ -108,8 +108,6 @@ with st.sidebar:
         placeholder="Ví dụ: HS10A1_05", 
         key="user_id_input", disabled=is_running)
     # Bắt buộc người dùng nhập Mã HS trước khi chạy ứng dụng
-    if is_running:
-        st.info("🔒 Đã khóa ô nhập thông tin trong lúc đếm ngược.")
     if not user_id.strip():
         st.warning("⚠️ Vui lòng nhập Mã học sinh để tải lịch sử cá nhân hóa!")
         st.stop()
@@ -135,6 +133,7 @@ with tab1:
 
     def countdown_timer(seconds):
         st.session_state.pomo_running = True
+        st.session_state.is_running = True
         if "time_left" not in st.session_state:
             st.session_state.time_left = seconds
         
@@ -149,7 +148,7 @@ with tab1:
         elif st.session_state.time_left == 0:
             timer_placeholder.success("🎉 Bạn đã hoàn thành xuất sắc một phiên Pomodoro! Hãy nghỉ ngơi ít phút.")
             st.session_state.pomo_running = False
-            st.session_state.is_running = True
+            st.session_state.is_running = False
             st.session_state.show_feedback = True
 
     st.title("🎯 Trợ Lý Dự Đoán & Cảnh Báo Trì Hoãn Học Tập")
