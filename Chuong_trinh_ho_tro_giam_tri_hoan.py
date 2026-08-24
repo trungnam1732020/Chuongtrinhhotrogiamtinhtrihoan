@@ -8,9 +8,9 @@ import plotly.express as px
 from google.oauth2.service_account import Credentials
 import gspread
 import re
-# =========================================================
+
 # 1. CẤU HÌNH KẾT NỐI GOOGLE SHEETS
-# =========================================================
+
 @st.cache_resource
 def get_gsheet_client():
     creds_dict = st.secrets["connections"]["gsheets"]
@@ -37,9 +37,18 @@ def get_worksheet():
     sheet_url = st.secrets["connections"]["gsheets"]["spreadsheet"]
     sh = client.open_by_url(sheet_url)
     return sh.get_worksheet(0)
-# =========================================================
+
 # 2. HÀM XỬ LÝ DỮ LIỆU CÁ NHÂN HÓA & CHẨN ĐOÁN
-# =========================================================
+
+@st.cache_data(ttl=15)  # Cache 15 giây để chống lỗi tràn Quota 429
+def load_sheet_data():
+    """Chỉ gọi API đọc Google Sheets tối đa 1 lần mỗi 15 giây"""
+    try:
+        worksheet = get_worksheet()
+        data = worksheet.get_all_records()
+        return pd.DataFrame(data)
+    except Exception:
+        return pd.DataFrame()
 def normalize_id(text):
     """Chuẩn hóa chuỗi nhập vào: Xóa khoảng trắng thừa, chuyển về chữ thường,
     xử lý email lấy phần tên trước dấu @
@@ -54,42 +63,29 @@ def normalize_id(text):
     return text.strip()
 def get_user_history(user_id):
     """Trích xuất lịch sử thông minh: Tự động nhận diện Họ tên/Email bất kể viết hoa/thường"""
-    try:
-        worksheet = get_worksheet()
-        data = worksheet.get_all_records()
-        df = pd.DataFrame(data)
-
-        if not df.empty:
-            df.columns = [c.strip().title() for c in df.columns]
-            user_col = [c for c in df.columns if "User" in c or "Mã" in c]
-
-            if user_col:
-                clean_target = normalize_id(user_id)
-
-                # Tạo cột tạm thời đã được chuẩn hóa để so sánh
-                df["clean_id"] = df[user_col[0]].apply(normalize_id)
-
-                # Lọc dữ liệu khớp với ID đã làm sạch
-                filtered_df = df[df["clean_id"] == clean_target]
-                return filtered_df
-    except Exception as e:
-        pass
+    df = load_sheet_data()
+    if not df.empty and "User ID" in df.columns:
+        clean_target = normalize_id(user_id)
+        return df[df["User ID"].apply(normalize_id) == clean_target]
     return pd.DataFrame()
 
 def diagnose_user(user_history):
     """Mô hình chẩn đoán xu hướng mệt mỏi/xao nhãng dựa trên lịch sử"""
-    if len(user_history) >= 2:
-        recent = user_history.tail(5)
-        fails = recent[recent["Mức Độ"].str.contains("Không hiệu quả", na=False)]
-        if len(fails) >= 2:
-            return "🔴 **CẢNH BÁO CHẨN ĐOÁN:** Bạn có xu hướng xao nhãng cao ở các phiên gần đây. Khuyên bạn nên áp dụng chu kỳ 15-20 phút để hồi phục tập trung."
-        else:
-            return "🟢 **CHẨN ĐOÁN:** Phong độ học tập của bạn đang duy trì rất tốt! Hãy tiếp tục phát huy."
-    return "💡 **CHẨN ĐOÁN:** Hệ thống cần thêm dữ liệu (ít nhất 2 phiên) để đưa ra dự đoán xu hướng chính xác."
+    total_sessions = len(user_history)
 
-# =========================================================
+    if total_sessions >= 2:
+        recent = user_history.tail(5)
+        fails = recent[
+            recent["Mức Độ"].astype(str).str.contains("Không hiệu quả", na=False)
+        ]
+        if len(fails) >= 2:
+            return f"🔴 **CẢNH BÁO CHẨN ĐOÁN (Đã ghi nhận {total_sessions} phiên):** Bạn có xu hướng xao nhãng cao gần đây. Khuyên dùng chu kỳ 15-20 phút."
+        return f"🟢 **CHẨN ĐOÁN (Đã ghi nhận {total_sessions} phiên):** Phong độ học tập của bạn đang duy trì rất tốt!"
+    return f"💡 **CHẨN ĐOÁN (Đã ghi nhận {total_sessions}/2 phiên):** Cần hoàn thành thêm phiên học để mô hình đưa ra dự đoán xu hướng."
+
+
 # 3. SIDEBAR: NHẬN DIỆN NGƯỜI DÙNG (CẮT DỮ LIỆU CÁ NHÂN)
-# =========================================================
+
 with st.sidebar:
     st.header("👤 Định danh Học sinh")
     st.caption("💡 **Mẹo:** Nên nhập **Họ tên + Lớp** (vd: `Đoàn Trung Nam 11N1`) hoặc 1 **Email** duy nhất để hệ thống theo dõi chính xác nhất.")
@@ -103,9 +99,9 @@ with st.sidebar:
         st.stop()
     st.success(f"Xin chào, **{user_id}**!")
     st.divider()
-# =========================================================
+
 # 4. GIAO DIỆN CHÍNH (TABS)
-# =========================================================
+
 tab1, tab2 = st.tabs(["⏱️ Giao Diện Hỗ Trợ Giảm Tính Trì Hoãn", "📊 Báo cáo Thống kê (KHKT)"])
 
 with tab1:
@@ -235,19 +231,19 @@ with tab1:
                         if "time_left" in st.session_state:
                             del st.session_state["time_left"]
                         time.sleep(1)
+                        st.cache_data.clear()
                         st.rerun()
                 except Exception as e:
                     st.error(f"Lỗi khi lưu lên Google Sheets: {e}")
 
-# =========================================================
+
 # 5. TAB BÁO CÁO THỐNG KÊ
-# =========================================================
+
 with tab2:
     st.header("📊 Kết quả Thực nghiệm & Đánh giá Hiệu quả")
     try:
-        worksheet = get_worksheet()
-        data = worksheet.get_all_records()
-        df = pd.DataFrame(data)
+        # Sử dụng hàm đã được cache chống lỗi 429
+        df = load_sheet_data()
 
         if not df.empty:
             column_map = {col: col.strip().title() for col in df.columns}
@@ -273,10 +269,14 @@ with tab2:
 
                 # 2. Bảng lý do chi tiết
                 st.subheader("📝 Danh sách lý do xao nhãng")
-                st.dataframe(df.iloc[::-1], hide_index=True, use_container_width=True)
+                st.dataframe(
+                    df.iloc[::-1], hide_index=True, use_container_width=True
+                )
 
-                # 3. Nút Tải CSV chống lỗi font
-                csv_data = "\ufeff" + df.to_csv(index=False, encoding="utf-8-sig")
+                # 3. Nút Tải CSV
+                csv_data = "\ufeff" + df.to_csv(
+                    index=False, encoding="utf-8-sig"
+                )
                 st.download_button(
                     label="📥 Tải báo cáo CSV",
                     data=csv_data,
