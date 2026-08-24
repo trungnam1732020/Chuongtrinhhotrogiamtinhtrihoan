@@ -117,21 +117,21 @@ def get_recommendation(user_history):
         return {
             "time": 15,
             "method": "⚡ Micro-Pomodoro (15 Phút) + Quy tắc 5 Phút",
-            "tip": "Năng lượng của bạn đang thấp. Hãy chia nhỏ mục tiêu và làm từng chút một!",
+            "tip": "Năng lượng của bạn đang thấp. Hãy chia nhỏ mục tiêu và làm từng chút một! Ngoài ra, bạn cũng có thể bật nhạc không lời trong lúc học tập",
         }
     # 2. Khuyên duy trì nhịp độ nếu đang cải thiện
     elif fails_count == 1:
         return {
             "time": 25,
             "method": "🎯 Pomodoro Tiêu chuẩn (25 Phút)",
-            "tip": "Đà tập trung đang trở lại. Giữ nguyên nhịp độ này và loại bỏ thiết bị gây xao nhãng.",
+            "tip": "Đà tập trung đang trở lại. Giữ nguyên nhịp độ này và loại bỏ các tác nhân gây xao nhãng. Đồng thời hãy đặt điện thoại ở chế độ Im Lặng!",
         }
     # 3. Khuyên bứt phá nếu phong độ xuất sắc
     else:
         return {
             "time": 45,
             "method": "🚀 Deep Work / Flow Zone (45 Phút)",
-            "tip": "Tập trung của bạn đang ở đỉnh cao! Hãy thử thách bản thân với các bài tập khó hơn.",
+            "tip": "Sự Tập trung của bạn đang ở đỉnh cao! Hãy đặt điện thoại của bạn cách 2m và thử thách bản thân với các bài tập khó hơn.",
         }
 # 3. SIDEBAR: NHẬN DIỆN NGƯỜI DÙNG (CẮT DỮ LIỆU CÁ NHÂN)
 if "is_running" not in st.session_state:
@@ -218,7 +218,7 @@ with tab1:
         if risk_score >= 70:
             st.error("🚨 NGUY CƠ TRÌ HOÃN RẤT CAO!")
             st.write("💡 **Giải pháp điều chỉnh:** Nhiệm vụ quá tải so với năng lượng hiện tại.")
-            st.info("👉 **Hành động ngay:** Đừng làm cả bài. Hãy xử lý từng câu từ dễ đến khó và làm trong 5 phút!")
+            st.info("👉 **Hành động ngay:** Đừng làm cả bài. Hãy xử lý câu dễ nhất và làm nó trong 5 phút! Sau đó đi đến các câu tiếp theo")
         elif risk_score >= 40:
             st.warning("⚠️ NGUY CƠ TRÌ HOÃN TRUNG BÌNH.")
             st.write("💡 **Giải pháp điều chỉnh:** Dùng kỹ thuật Pomodoro chia nhỏ thời gian.")
@@ -227,7 +227,9 @@ with tab1:
                 st.warning("⚠️ Đang ở chế độ TEST (Thử nghiệm 10 giây)")
                 countdown_timer(10)
             else:
-                mode = st.radio("Chọn Chế Độ Tập Trung:", ("25 phút (Pomodoro chuẩn)", "45 phút (1 Tiết học)"), index=None, key="pomodoro_mode_radio")
+                mode = st.radio("Chọn Chế Độ Tập Trung:", ("15 phút (Micro-Pomodoro)","25 phút (Pomodoro chuẩn)", "45 phút (1 Tiết học)"), index=None, key="pomodoro_mode_radio")
+                if mode == "15 phút (Micro-Pomodoro)":
+                    countdown_timer(900)
                 if mode == "25 phút (Pomodoro chuẩn)":
                     countdown_timer(1500)
                 elif mode == "45 phút (1 Tiết học)":
@@ -244,11 +246,17 @@ with tab1:
                 st.warning("⚠️ Đang ở chế độ TEST (Thử nghiệm 10 giây)")
                 countdown_timer(10)
             else:
-                mode = st.radio("Chọn Chế Độ Tập Trung:", ("25 phút (Pomodoro chuẩn)", "45 phút (1 Tiết học)"), index=None, key="pomodoro_mode_radio_low")
+                mode = st.radio("Chọn Chế Độ Tập Trung:", ("15 phút (Micro-Pomodoro)","25 phút (Pomodoro chuẩn)", "45 phút (1 Tiết học)"), index=None, key="pomodoro_mode_radio")
+                if mode == "15 phút (Micro-Pomodoro)":
+                    countdown_timer(900)
                 if mode == "25 phút (Pomodoro chuẩn)":
                     countdown_timer(1500)
                 elif mode == "45 phút (1 Tiết học)":
                     countdown_timer(2700)
+                else:
+                    if "time_left" in st.session_state:
+                        del st.session_state["time_left"]
+                    st.info("👈 Chọn một chế độ bên trên để bắt đầu.")
 
     # --- FORM BÁO CÁO CÓ TÍNH NĂNG GỢI Ý ĐÃ TỰ ĐỘNG DỰ ĐOÁN LÝ DO QUÁ KHỨ ---
     if st.session_state.get("show_feedback", False):
