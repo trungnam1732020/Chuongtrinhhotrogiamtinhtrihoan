@@ -231,7 +231,7 @@ with tab1:
             if submit_button:
                 final_reason = danh_sach_ly_do.strip() if danh_sach_ly_do.strip() != "" else "Không có"
                 now_vn = datetime.now(zoneinfo.ZoneInfo("Asia/Ho_Chi_Minh"))
-                thoi_gian = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                thoi_gian = now_vn.strftime("%Y-%m-%d %H:%M:%S")
                 
                 try:
                     worksheet = get_worksheet()
