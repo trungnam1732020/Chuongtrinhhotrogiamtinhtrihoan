@@ -229,7 +229,7 @@ with tab1:
                     key="pomodoro_mode_radio",
                 )
 
-                if st.button("▶️ BẮT ĐẦU TẬP TRUNG HOÀN THÀNH BÀI"):
+                if st.button("▶️ BẮT ĐẦU HOÀN THÀNH BÀI"):
                     if mode == "15 phút (Micro-Pomodoro)":
                         st.session_state.time_left = 900
                         st.session_state.pomo_running = True
