@@ -157,7 +157,6 @@ def get_recommendation(user_history):
 
 
 def apply_dynamic_theme(user_history=None):
-    """Đổi màu nền VÀ màu chữ tương ứng để tránh bị tàng hình trong Dark Mode"""
     if user_history is None or len(user_history) < 2:
         return
 
@@ -170,36 +169,32 @@ def apply_dynamic_theme(user_history=None):
         ]
     )
 
-    # Đặt style đổi cả màu nền (background) lẫn màu chữ (color)
     if fails_count >= 2:
-        # Trạng thái Cảnh báo: Nền hồng nhạt
+        # Phong độ thấp: Highlight viền Đỏ Cảnh Báo
         st.markdown(
             """
             <style>
-                .stApp { background-color: #FFF5F5 !important; }
-                .stApp p, .stApp h1, .stApp h2, .stApp h3, .stApp span, .stApp label { color: #2D3748 !important; }
+                div[data-testid="stExpander"] { border: 2px solid #FF4B4B !important; }
             </style>
             """,
             unsafe_allow_html=True,
         )
     elif fails_count == 1:
-        # Trạng thái Tiến bộ: Nền vàng nhạt
+        # Phong độ trung bình: Highlight viền Vàng Tiến Bộ
         st.markdown(
             """
             <style>
-                .stApp { background-color: #FFFFF0 !important; }
-                .stApp p, .stApp h1, .stApp h2, .stApp h3, .stApp span, .stApp label { color: #2D3748 !important; }
+                div[data-testid="stExpander"] { border: 2px solid #FFA726 !important; }
             </style>
             """,
             unsafe_allow_html=True,
         )
     else:
-        # Trạng thái Tốt: Nền xanh nhạt
+        # Phong độ tốt: Highlight viền Xanh Tốt
         st.markdown(
             """
             <style>
-                .stApp { background-color: #F0FFF4 !important; }
-                .stApp p, .stApp h1, .stApp h2, .stApp h3, .stApp span, .stApp label { color: #2D3748 !important; }
+                div[data-testid="stExpander"] { border: 2px solid #66BB6A !important; }
             </style>
             """,
             unsafe_allow_html=True,
