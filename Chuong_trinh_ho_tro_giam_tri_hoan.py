@@ -107,6 +107,8 @@ with st.sidebar:
         placeholder="Ví dụ: HS10A1_05", 
         key="user_id_input", disabled=is_running)
     # Bắt buộc người dùng nhập Mã HS trước khi chạy ứng dụng
+    if is_running:
+        st.info("🔒 Đã khóa ô nhập thông tin trong lúc đếm ngược.")
     if not user_id.strip():
         st.warning("⚠️ Vui lòng nhập Mã học sinh để tải lịch sử cá nhân hóa!")
         st.stop()
