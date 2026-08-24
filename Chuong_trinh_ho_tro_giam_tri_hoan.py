@@ -70,19 +70,30 @@ def get_user_history(user_id):
     return pd.DataFrame()
 
 def diagnose_user(user_history):
-    """Mô hình chẩn đoán xu hướng mệt mỏi/xao nhãng dựa trên lịch sử"""
+    """Mô hình chẩn đoán linh hoạt 3 cấp độ: Cảnh báo - Tiến bộ - Tốt"""
     total_sessions = len(user_history)
-
     if total_sessions >= 2:
         recent = user_history.tail(5)
-        fails = recent[
-            recent["Mức Độ"].astype(str).str.contains("Không hiệu quả", na=False)
-        ]
-        if len(fails) >= 2:
-            return f"🔴 **CẢNH BÁO CHẨN ĐOÁN (Đã ghi nhận {total_sessions} phiên):** Bạn có xu hướng xao nhãng cao gần đây. Khuyên dùng chu kỳ 15-20 phút."
-        return f"🟢 **CHẨN ĐOÁN (Đã ghi nhận {total_sessions} phiên):** Phong độ học tập của bạn đang duy trì rất tốt!"
-    return f"💡 **CHẨN ĐOÁN (Đã ghi nhận {total_sessions}/2 phiên):** Cần hoàn thành thêm phiên học để mô hình đưa ra dự đoán xu hướng."
+        # Đếm số phiên 'Không hiệu quả' trong 5 phiên gần nhất
+        fails_count = len(
+            recent[
+                recent["Mức Độ"]
+                .astype(str)
+                .str.contains("Không hiệu quả", na=False)
+            ]
+        )
+        # 1. CẤP ĐỘ ĐỎ: Có từ 2 phiên xao nhãng trở lên
+        if fails_count >= 2:
+            return f"🔴 **CẢNH BÁO CHẨN ĐOÁN (Phiên {total_sessions}):** Bạn đang gặp khó khăn trong việc tập trung. Khuyên dùng chu kỳ ngắn 15-20 phút."
 
+        # 2. CẤP ĐỘ VÀNG: Chỉ còn 1 phiên xao nhãng (Đang trên đà cải thiện)
+        elif fails_count == 1:
+            return f"🟡 **GHI NHẬN TIẾN BỘ (Phiên {total_sessions}):** Bạn đang lấy lại sự tập trung rất tốt! Hãy tiếp tục duy trì đà này nhé."
+
+        # 3. CẤP ĐỘ XANH: 0 phiên xao nhãng (Phong độ hoàn hảo)
+        else:
+            return f"🟢 **CHẨN ĐOÁN (Phiên {total_sessions}):** Phong độ học tập của bạn đang duy trì rất tốt!"
+    return f"💡 **CHẨN ĐOÁN ({total_sessions}/2 phiên):** Cần hoàn thành thêm phiên học để mô hình đưa ra dự đoán xu hướng."
 
 # 3. SIDEBAR: NHẬN DIỆN NGƯỜI DÙNG (CẮT DỮ LIỆU CÁ NHÂN)
 
