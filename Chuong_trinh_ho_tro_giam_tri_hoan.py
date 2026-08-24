@@ -149,18 +149,17 @@ with st.sidebar:
     st.header("👤 Định danh Học sinh")
     st.caption(
         "💡 **Mẹo:** Nên nhập **Họ tên + Lớp** (vd: `Đoàn Trung Nam 11N1`)")
-
     user_id = st.text_input(
         "Nhập Họ tên / Email của bạn:",
         placeholder="Ví dụ: HS10A1_05",
         key="user_id_input",
         disabled=st.session_state.pomo_running,)
 
-    if user_id.strip():
-        st.success(f"Xin chào, **{user_id}**!")
-    else:
-        st.info("👆 Vui lòng nhập thông tin để bắt đầu.")
-        st.stop
+    if not user_id.strip():
+        st.warning("⚠️ Vui lòng nhập thông tin định danh để tiếp tục!")
+        st.stop()
+
+    st.success(f"Xin chào, **{user_id}**!")
     st.divider()
 
 # 5. GIAO DIỆN CHÍNH (TABS)
