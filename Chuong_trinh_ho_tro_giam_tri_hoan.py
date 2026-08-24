@@ -157,6 +157,9 @@ def get_recommendation(user_history):
 
 
 def apply_dynamic_theme(user_history=None):
+    """Đổi màu nhấn động (Accent Color) dựa trên chẩn đoán phong độ
+    Giữ nguyên nền Dark Mode, đảm bảo chữ luôn sáng rõ 100%
+    """
     if user_history is None or len(user_history) < 2:
         return
 
@@ -165,40 +168,51 @@ def apply_dynamic_theme(user_history=None):
         recent[
             recent["Mức Độ"]
             .astype(str)
-            .str.contains("Không hiệu quả", na=False)
-        ]
-    )
-
+            .str.contains("Không hiệu quả", na=False)])
+    # 1. Xác định bộ màu điểm nhấn theo phong độ
     if fails_count >= 2:
-        # Phong độ thấp: Highlight viền Đỏ Cảnh Báo
-        st.markdown(
-            """
-            <style>
-                div[data-testid="stExpander"] { border: 2px solid #FF4B4B !important; }
-            </style>
-            """,
-            unsafe_allow_html=True,
-        )
+        # 🔴 Cảnh báo: Màu đỏ
+        accent_color = "#FF4B4B"
+        bg_card = "rgba(255, 75, 75, 0.08)"
     elif fails_count == 1:
-        # Phong độ trung bình: Highlight viền Vàng Tiến Bộ
-        st.markdown(
-            """
-            <style>
-                div[data-testid="stExpander"] { border: 2px solid #FFA726 !important; }
-            </style>
-            """,
-            unsafe_allow_html=True,
-        )
+        # 🟡 Tiến bộ: Màu vàng
+        accent_color = "#FFA726"
+        bg_card = "rgba(255, 167, 38, 0.08)"
     else:
-        # Phong độ tốt: Highlight viền Xanh Tốt
-        st.markdown(
-            """
-            <style>
-                div[data-testid="stExpander"] { border: 2px solid #66BB6A !important; }
-            </style>
-            """,
-            unsafe_allow_html=True,
-        )
+        # 🟢 Phong độ tốt: Màu xanh lá
+        accent_color = "#2ECC71"
+        bg_card = "rgba(46, 204, 113, 0.08)"
+
+    # 2. Inject CSS thay đổi màu viền, nút bấm, tiêu đề và thẻ thông tin
+    st.markdown(
+        f"""
+        <style>
+            /* Đổi màu viền và nền thẻ Khuyên dùng */
+            div[data-testid="stExpander"] {{
+                border: 2px solid {accent_color} !important;
+                background-color: {bg_card} !important;
+                border-radius: 10px;
+            }}
+            
+            /* Đổi màu tiêu đề chính */
+            h1 {{
+                color: {accent_color} !important;
+            }}
+            
+            /* Đổi màu viền nút bấm chính */
+            button[type="primary"], div.stButton > button {{
+                border-color: {accent_color} !important;
+                color: #FFFFFF !important;
+            }}
+            
+            /* Highlight thẻ Metric chỉ số */
+            div[data-testid="stMetric"] {{
+                border-left: 4px solid {accent_color} !important;
+            }}
+        </style>
+    """,
+        unsafe_allow_html=True,
+    )
 
 # =========================================================
 # 3. KHO TẠO SESSION STATE BAN ĐẦU (Khóa chống trôi)
@@ -236,33 +250,6 @@ with st.sidebar:
         st.info("👆 Vui lòng nhập thông tin để bắt đầu.")
 
     st.divider()
-
-    st.subheader("🎧 Góc Tập Trung")
-    music_option = st.selectbox(
-        "Chọn nhạc nền (Không quảng cáo):",
-        options=[
-            "Không Nhạc",
-            "🌧️ Tiếng mưa nhẹ",
-            "☕ Lofi Chill Study",
-            "🧠 Sóng não Alpha (Tập trung)",
-        ],
-    )
-
-    if music_option == "🌧️ Tiếng mưa nhẹ":
-        st.audio(
-            "https://stream.zeno.fm/f3wvbbqmdg8uv", format="audio/mp3"
-        )
-    elif music_option == "☕ Lofi Chill Study":
-        st.audio(
-            "https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3",
-            format="audio/mp3",
-        )
-    elif music_option == "🧠 Sóng não Alpha (Tập trung)":
-        st.audio(
-            "https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8c8a73223.mp3?filename=alpha-binaural-beats-10822.mp3",
-            format="audio/mp3",
-        )
-
 
 # =========================================================
 # 5. GIAO DIỆN CHÍNH (TABS)
