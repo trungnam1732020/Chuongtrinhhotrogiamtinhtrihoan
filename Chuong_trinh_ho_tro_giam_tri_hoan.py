@@ -250,8 +250,7 @@ with st.sidebar:
 
     if music_option == "🌧️ Tiếng mưa nhẹ":
         st.audio(
-            "https://cdn.pixabay.com/download/audio/2022/05/16/audio_db6591201e.mp3",
-            format="audio/mp3",
+            "https://stream.zeno.fm/f3wvbbqmdg8uv", format="audio/mp3"
         )
     elif music_option == "☕ Lofi Chill Study":
         st.audio(
@@ -260,7 +259,7 @@ with st.sidebar:
         )
     elif music_option == "🧠 Sóng não Alpha (Tập trung)":
         st.audio(
-            "https://cdn.pixabay.com/download/audio/2021/09/06/audio_873e3a96aa.mp3",
+            "https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8c8a73223.mp3?filename=alpha-binaural-beats-10822.mp3",
             format="audio/mp3",
         )
 
