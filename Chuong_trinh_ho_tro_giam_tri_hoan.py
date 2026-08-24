@@ -158,6 +158,7 @@ with st.sidebar:
 
     if user_id.strip():
         st.success(f"Xin chào, **{user_id}**!")
+        st.stop
     else:
         st.info("👆 Vui lòng nhập thông tin để bắt đầu.")
     st.divider()
