@@ -104,7 +104,7 @@ with st.sidebar:
     user_id = st.text_input(
         "Nhập Họ tên / Email của bạn:", 
         placeholder="Ví dụ: HS10A1_05", 
-        key="user_id_input")
+        key="user_id_input", disabled=is_disabled)
     # Bắt buộc người dùng nhập Mã HS trước khi chạy ứng dụng
     if not user_id.strip():
         st.warning("⚠️ Vui lòng nhập Mã học sinh để tải lịch sử cá nhân hóa!")
