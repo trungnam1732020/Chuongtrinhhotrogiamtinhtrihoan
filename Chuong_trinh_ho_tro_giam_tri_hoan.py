@@ -97,7 +97,8 @@ def diagnose_user(user_history):
     return f"💡 **CHẨN ĐOÁN ({total_sessions}/2 phiên):** Cần hoàn thành thêm phiên học để mô hình đưa ra dự đoán xu hướng."
 
 # 3. SIDEBAR: NHẬN DIỆN NGƯỜI DÙNG (CẮT DỮ LIỆU CÁ NHÂN)
-
+if "is_running" not in st.session_state:
+    st.session_state.is_running = False
 with st.sidebar:
     st.header("👤 Định danh Học sinh")
     st.caption("💡 **Mẹo:** Nên nhập **Họ tên + Lớp** (vd: `Đoàn Trung Nam 11N1`) hoặc 1 **Email** duy nhất để hệ thống theo dõi chính xác nhất.")
@@ -148,6 +149,7 @@ with tab1:
         elif st.session_state.time_left == 0:
             timer_placeholder.success("🎉 Bạn đã hoàn thành xuất sắc một phiên Pomodoro! Hãy nghỉ ngơi ít phút.")
             st.session_state.pomo_running = False
+            st.session_state.is_running = True
             st.session_state.show_feedback = True
 
     st.title("🎯 Trợ Lý Dự Đoán & Cảnh Báo Trì Hoãn Học Tập")
