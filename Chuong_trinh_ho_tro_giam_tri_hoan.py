@@ -157,7 +157,6 @@ with st.sidebar:
 
     if not user_id.strip():
         st.warning("⚠️ Vui lòng nhập thông tin định danh để tiếp tục!")
-        st.stop()
 
     st.success(f"Xin chào, **{user_id}**!")
     st.divider()
@@ -174,6 +173,7 @@ with tab1:
     if not user_id.strip():
         st.info(
             "📱 **Bạn đang dùng Điện thoại?** Hãy bấm vào biểu tượng **`>`** ở góc trên bên trái màn hình để **nhập Họ tên / Mã học sinh** nhé!")
+        st.stop
     # Tải dữ liệu lịch sử (Nếu chưa nhập user_id thì hàm tự trả về DataFrame rỗng)
     user_history = get_user_history(user_id)
 
