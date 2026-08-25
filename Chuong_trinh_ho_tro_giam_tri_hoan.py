@@ -168,7 +168,12 @@ tab1, tab2 = st.tabs(
     ["⏱️ Giao Diện Hỗ Trợ Giảm Tính Trì Hoãn", "📊 Báo cáo Thống kê (KHKT)"])
 
 with tab1:
-    st.title("🎯 Trợ Lý Dự Đoán & Cảnh Báo Trì Hoãn Học Tập")
+    st.title("🎯 Trợ Lý Dự Đoán & Hỗ Trợ Giảm Trì Hoãn Trong Học Tập")
+
+    # Chỉ dẫn rõ ràng cho người dùng Mobile nếu chưa nhập User ID
+    if not user_id.strip():
+        st.info(
+            "📱 **Bạn đang dùng Điện thoại?** Hãy bấm vào biểu tượng **`>`** ở góc trên bên trái màn hình để **nhập Họ tên / Mã học sinh** nhé!")
     # Tải dữ liệu lịch sử (Nếu chưa nhập user_id thì hàm tự trả về DataFrame rỗng)
     user_history = get_user_history(user_id)
 
