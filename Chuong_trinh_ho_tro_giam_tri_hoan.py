@@ -148,7 +148,7 @@ if "risk_score" not in st.session_state:
 with st.sidebar:
     st.header("👤 Định danh Học sinh")
     st.caption(
-        "💡 **Mẹo:** Nên nhập **Họ tên + Lớp** (vd: `Đoàn Trung Nam 11N1`)")
+        "💡 **Mẹo:** Nên nhập duy nhất 1 **Họ tên + Lớp** (vd: `Đoàn Trung Nam 11N1`) hoặc chỉ dùng 1 email trong lúc sử dụng web!")
     user_id = st.text_input(
         "Nhập Họ tên / Email của bạn:",
         placeholder="Ví dụ: HS10A1_05",
@@ -172,7 +172,7 @@ with tab1:
     # Chỉ dẫn rõ ràng cho người dùng Mobile nếu chưa nhập User ID
     if not user_id.strip():
         st.info(
-            "📱 **Bạn đang dùng Điện thoại?** Hãy bấm vào biểu tượng **`>`** ở góc trên bên trái màn hình để **nhập Họ tên / Mã học sinh** nhé!")
+            "📱 **Bạn đang dùng Điện thoại?** Hãy bấm vào biểu tượng **`>>`** ở góc trên bên trái màn hình để **nhập Họ tên / Email** nhé!")
         st.stop()
     # Tải dữ liệu lịch sử (Nếu chưa nhập user_id thì hàm tự trả về DataFrame rỗng)
     user_history = get_user_history(user_id)
