@@ -94,7 +94,7 @@ def diagnose_user(user_history):
                 .astype(str)
                 .str.contains("Không hiệu quả", na=False)])
         if fails_count >= 2:
-            return f"🔴 **CẢNH BÁO TRÌ HOÃN (Phiên {total_sessions}):** Bạn đang gặp khó khăn trong việc tập trung. Khuyên dùng chu kỳ ngắn 15-20 phút."
+            return f"🔴 **CẢNH BÁO TRÌ HOÃN (Phiên {total_sessions}):** Bạn đang gặp khó khăn trong việc tập trung. Khuyên dùng chu kỳ ngắn 15-25 phút."
         elif fails_count == 1:
             return f"🟡 **GHI NHẬN TIẾN BỘ (Phiên {total_sessions}):** Bạn đang có sự tập trung rất tốt! Hãy tiếp tục duy trì đà này nhé."
         else:
