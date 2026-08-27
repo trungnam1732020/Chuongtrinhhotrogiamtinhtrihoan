@@ -223,8 +223,8 @@ with tab1:
         if not st.session_state.pomo_running:
             if is_test_mode:
                 st.warning("⚠️ Đang ở chế độ TEST (Thử nghiệm 10 giây)")
-                if st.button("▶️ Bắt đầu 10 giây Test"):
-                    st.session_state.time_left = 10
+                if st.button("▶️ Bắt đầu 5 giây Test"):
+                    st.session_state.time_left = 5
                     st.session_state.pomo_running = True
                     st.rerun()
             else:
