@@ -94,7 +94,7 @@ def diagnose_user(user_history):
                 .astype(str)
                 .str.contains("Không hiệu quả", na=False)])
         if fails_count >= 2:
-            return f"🔴 **CẢNH BÁO CHẨN ĐOÁN (Phiên {total_sessions}):** Bạn đang gặp khó khăn trong việc tập trung. Khuyên dùng chu kỳ ngắn 15-20 phút."
+            return f"🔴 **CẢNH BÁO TRÌ HOÃN (Phiên {total_sessions}):** Bạn đang gặp khó khăn trong việc tập trung. Khuyên dùng chu kỳ ngắn 15-20 phút."
         elif fails_count == 1:
             return f"🟡 **GHI NHẬN TIẾN BỘ (Phiên {total_sessions}):** Bạn đang có sự tập trung rất tốt! Hãy tiếp tục duy trì đà này nhé."
         else:
@@ -125,12 +125,12 @@ def get_recommendation(user_history):
         return {
             "time": 25,
             "method": "🎯 Pomodoro Tiêu chuẩn (25 Phút)",
-            "tip": "Đà tập trung đang trở lại. Giữ nguyên nhịp độ này và loại bỏ các tác nhân gây xao nhãng. Đồng thời hãy đặt điện thoại ở chế độ Im Lặng!",}
+            "tip": "Đà tập trung đang trở lại. Cố gắng giữ nguyên nhịp độ này và loại bỏ các tác nhân gây xao nhãng. Đồng thời hãy đặt điện thoại ở chế độ Im Lặng!",}
     else:
         return {
             "time": 45,
             "method": "🚀 Deep Work / Flow Zone (45 Phút)",
-            "tip": "Sự Tập trung của bạn đang ở đỉnh cao! Hãy đặt điện thoại của bạn cách 2m và thử thách bản thân với các bài tập khó hơn.",}
+            "tip": "Sự Tập trung của bạn đang ở đỉnh cao! Bạn nên đặt điện thoại cách xa 2m và thử thách bản thân với các bài tập khó hơn.",}
 
 # 3. KHO TẠO SESSION STATE BAN ĐẦU (Khóa chống trôi)
 
