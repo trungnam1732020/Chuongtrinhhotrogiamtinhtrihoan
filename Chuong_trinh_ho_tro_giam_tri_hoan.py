@@ -9,6 +9,7 @@ from google.oauth2.service_account import Credentials
 import pandas as pd
 import plotly.express as px
 import streamlit as st
+import unicodedata
 
 # 1. CẤU HÌNH KẾT NỐI GOOGLE SHEETS (An toàn)
 
@@ -68,12 +69,17 @@ def load_sheet_data():
 def normalize_id(text):
     if not text:
         return ""
+    # 1. Chuyển thành chữ thường
     text = str(text).strip().lower()
+    # 2. Bỏ đuôi email nếu có
     if "@" in text:
         text = text.split("@")[0]
-    text = re.sub(r"[^\w\s]", "", text)
-    text = re.sub(r"\s+", " ", text)
-    return text.strip()
+    # 3. TÁCH DẤU TIẾNG VIỆT (chuyển "đoàn" -> "doan")
+    text = unicodedata.normalize("NFD", text)
+    text = re.sub(r"[\u0300-\u036f]", "", text).replace("đ", "d").replace("Đ", "d")
+    # 4. XÓA TOÀN BỘ KÝ TỰ ĐẶC BIỆT & KHOẢNG TRẮNG
+    text = re.sub(r"[^\w]", "", text)
+    return text
 
 def get_user_history(user_id):
     if not user_id or not user_id.strip():
